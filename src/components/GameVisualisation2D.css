@@ -1,0 +1,19 @@
+.board {
+    div {
+        height: var(--cell-size);
+    }
+
+    span {
+        aspect-ratio: 1;
+        width: var(--cell-size);
+        display: inline-block;
+    }
+
+    .free {
+        background-color: lightgreen;
+    }
+
+    .wall {
+        background-color: brown;
+    }
+}
