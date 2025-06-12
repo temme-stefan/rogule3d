@@ -7,7 +7,7 @@ function App() {
     const [game,setGame] = useState<TGame|null>(null)
 
     const handlePlay = ()=>{
-        setGame(createGame(new Date().toDateString()))
+        setGame(createGame(new Date().toISOString()))
         console.log(game)
     }
 
@@ -16,7 +16,7 @@ function App() {
             <h1>Rogule 3D</h1>
         </header>
         <main >
-            {!game && <button type={"button"} onClick={handlePlay}>Play</button>}
+            {<button type={"button"} onClick={handlePlay}>Play</button>}
             {game && <GameVisualisation2D game={game}/>}
         </main>
         <footer></footer>
