@@ -6,7 +6,7 @@ export type TItem = {
     cell?: TCell
     treasure?: TItem,
     obstacle: boolean,
-    unicode:string
+    unicode: string
 }
 
 export const DecorationTypes = {
@@ -18,28 +18,70 @@ export const DecorationTypes = {
 const decorationTypes = Object.values(DecorationTypes) as (typeof DecorationTypes)[keyof typeof DecorationTypes][];
 
 
-export const treasureTypes = {
-
+export const TreasureTypes = {
+    chestnut: 1,
+    mushroom: 2,
+    gem_stone: 3,
+    health: 4,
+    shield: 5,
+    dagger: 6,
+    axe: 7
 }
 
-export type TItemTypes = typeof decorationTypes[keyof typeof decorationTypes] | typeof treasureTypes[keyof typeof treasureTypes];
+const treasureTypes = Object.values(TreasureTypes) as (typeof TreasureTypes)[keyof typeof TreasureTypes][];
+
+export type TItemTypes =
+    typeof decorationTypes[keyof typeof decorationTypes]
+    | typeof treasureTypes[keyof typeof treasureTypes];
 
 
 export function createDecoration(random: SeededRandom) {
     return getDecoration(random.pickElement(decorationTypes));
 }
 
-function getDecoration(type:typeof decorationTypes[keyof typeof decorationTypes]):TItem {
+export function createTreasure(random: SeededRandom) {
+    return getTreasure(random.pickElement(treasureTypes))
+}
+
+function getTreasure(type: TItemTypes): TItem {
+    let unicode = "?"
+    switch (type) {
+        case TreasureTypes.chestnut:
+            unicode = "🌰";
+            break;
+        case TreasureTypes.mushroom:
+            unicode = "🍄";
+            break;
+        case TreasureTypes.gem_stone:
+            unicode = "💎";
+            break;
+        case TreasureTypes.health:
+            unicode = "🥃";
+            break;
+        case TreasureTypes.shield:
+            unicode = "🛡️";
+            break;
+        case TreasureTypes.dagger:
+            unicode = "🗡️";
+            break;
+        case TreasureTypes.axe:
+            unicode = "🪓";
+            break;
+    }
+    return {type, obstacle: false, unicode}
+}
+
+function getDecoration(type: TItemTypes): TItem {
     let unicode = "?";
-    switch (type){
+    switch (type) {
         case DecorationTypes.potted_plant:
-            unicode="🪴"
+            unicode = "🪴"
             break;
         case DecorationTypes.rock:
-            unicode="🪨"
+            unicode = "🪨"
             break;
         case DecorationTypes.wood_block:
-            unicode="🪵"
+            unicode = "🪵"
             break;
     }
     return {type, obstacle: true, unicode};
