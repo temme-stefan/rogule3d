@@ -1,0 +1,26 @@
+.board {
+    .row {
+        height: var(--cell-size);
+        display: flex;
+        flex-direction: row;
+    }
+
+    .cell {
+        aspect-ratio: 1;
+        width: var(--cell-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: calc(var(--cell-size) * 0.7);
+    }
+
+    .free {
+        background-color: lightgoldenrodyellow;
+    }
+    .door{
+        background-color: #E6E7E8;
+    }
+    .wall {
+        background-color: #31373D;
+    }
+}
