@@ -3,4 +3,4 @@ Inspired by the great https://rogule.com/ by [Chris McCormick](https://github.co
 
 
 
-Started with Vite Template [React + TypeScript + Vite](./README_TEMPALTE.md).
+Started with Vite Template [React + TypeScript + Vite](./README_TEMPLATE.md).
