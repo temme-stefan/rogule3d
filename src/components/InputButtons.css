@@ -1,0 +1,43 @@
+.input-buttons {
+    display: grid;
+    grid-template:
+      ". up ." auto
+      "left idle right" auto
+      ". down ." auto
+      /auto auto auto;
+    gap: 0.5rem;
+    button {
+        aspect-ratio: 1;
+        display: grid;
+        grid-template: 10% 80% / 80%;
+        width: 4rem;
+        justify-content: center;
+        align-items: center;
+        color:transparent;
+        border: 2px solid darkblue;
+        background-color: lightblue;
+        svg{
+            color:darkblue;
+        }
+    }
+
+    .up {
+        grid-area: up;
+    }
+
+    .down {
+        grid-area: down;
+    }
+
+    .left {
+        grid-area: left;
+    }
+
+    .right {
+        grid-area: right;
+    }
+
+    .idle {
+        grid-area: idle;
+    }
+}

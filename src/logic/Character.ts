@@ -10,6 +10,7 @@ export type TCharacter = {
     treasure?: TItem,
     hitpoints: number,
     current: number,
+    counter?:number
     unicode: string,
 }
 
@@ -39,6 +40,7 @@ export function createCharacter(player: boolean, random: SeededRandom) {
         const p = getMonstertypDefaults(CharacterTypes.elf) as TPlayer;
         p.player=true;
         Object.defineProperty(p,"level",{get:()=>1+ Math.floor((-1 + Math.sqrt(1 + 8 * p.exp)) / 2)});
+        p.counter=0;
         return p;
     }
     return getMonstertypDefaults(random.pickElement(monsterTypes));

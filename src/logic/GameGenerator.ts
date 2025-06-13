@@ -14,6 +14,10 @@ export const defaultOptions = {
     },
     maxDeadEnds: 0,
     minDistanz: 10,
+    naturalHealing:{
+        steps:100,
+        amount: 2
+    },
     enemies: {
         min: 5,
         max: 5,
@@ -35,6 +39,11 @@ export const defaultOptions = {
 
 export type TOptions = typeof defaultOptions;
 
+export type TState = {
+    step:number,
+    transitions:any[],
+    state:"playing"|"win"|"lose"
+}
 
 export type TGame = {
     seed: string,
@@ -44,7 +53,9 @@ export type TGame = {
     decorations: TItem[],
     random: SeededRandom,
     board: TCell[][],
-    options: TOptions
+    options: TOptions,
+    mover: (action: TInputActions) => TState,
+    state:TState
 }
 
 
@@ -118,5 +129,154 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
     const monsters = addMonsters(random, board, player, options);
     const decorations = addDecorations(random, board, options);
     const treasures = addTreasures(random, monsters, decorations, options);
-    return {seed, player, monsters, treasures, decorations, board, options, random,} as TGame;
+    const state= {
+        step:0,
+        transitions:[],
+        state:"playing"
+    }
+    const mover = (input: TInputActions) => {
+        state.transitions=[];
+        const actions = getActions(input, board, player, monsters, random);
+        const grouped = Map.groupBy(actions, a => a.type);
+
+        handleMove(grouped.get(TGameAction.move)??[],player);
+        if (grouped.has(TGameAction.increaseStepCounter)) {
+            state.step++;
+            if (player.current < player.hitpoints) {
+                player.counter!++;
+                if (player.counter! == options.naturalHealing.steps) {
+                    player.current = Math.min(player.current + 2, player.hitpoints);
+                    player.counter = 0
+                }
+            }
+            if (player.current == player.hitpoints) {
+                player.counter = 0;
+            }
+
+
+        }
+        return state;
+    }
+    return {seed, player, monsters, treasures, decorations, board, options, random, mover, state} as TGame;
+}
+
+function handleMove(actions:TAction[], player:TCharacter) {
+    actions.sort((a, b) => (a.actor == player)?-1:( (b.actor==player)?1: (b.actor.exp - a.actor.exp)));
+    actions.forEach(({actor,targetCell}) => {
+        if (targetCell && actor.current>0 && targetCell.characters.length === 0) {
+            targetCell.characters.push(actor);
+            actor.cell?.characters.splice(actor.cell?.characters.indexOf(actor),1);
+            actor.cell = targetCell;
+        }
+    })
+}
+
+
+function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight" | "idle", player: TCharacter, board: TCell[][]) {
+    const actions: TAction[] = []
+    if (input == InputActions.idle) {
+        actions.push({type: TGameAction.increaseStepCounter, actor:player});
+    } else {
+        const playerCell = player.cell!;
+        let targetCell = playerCell;
+        switch (input) {
+            case InputActions.moveUp:
+                targetCell = board[playerCell.y - 1][playerCell.x];
+                break;
+            case InputActions.moveDown:
+                targetCell = board[playerCell.y + 1][playerCell.x];
+                break;
+            case InputActions.moveLeft:
+                targetCell = board[playerCell.y][playerCell.x - 1];
+                break;
+            case InputActions.moveRight:
+                targetCell = board[playerCell.y][playerCell.x + 1];
+                break;
+        }
+        if (targetCell.type !== CellTypes.wall) {
+            actions.push({type: TGameAction.increaseStepCounter, actor:player});
+            let move = true;
+            if (targetCell.characters.length > 0) {
+                actions.push({type: TGameAction.fight, actor: player, defender: targetCell.characters[0]});
+                move = false;
+            }
+            if (targetCell.items.length > 0) {
+                const hasObstacle = targetCell.items[0].obstacle;
+                if (hasObstacle) {
+                    actions.push({type: TGameAction.destroy, item: targetCell.items[0], actor:player});
+                    move = false;
+                } else {
+                    actions.push({type: TGameAction.pickUp, item: targetCell.items[0], actor:player});
+                }
+            }
+            if (targetCell.type === CellTypes.gate) {
+                actions.push({type: TGameAction.win, actor:player});
+            }
+            if (move) {
+                actions.push({type: TGameAction.move, targetCell: targetCell, actor: player});
+            }
+        }
+    }
+    return actions;
+}
+
+function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][], random: SeededRandom) {
+    const mActions = [];
+    const distance = getDistance(m.cell!, player.cell!, board);
+    if (distance == 1) {
+        mActions.push({type: TGameAction.fight, actor: m, defender: player});
+    } else if (distance < m.vision) {
+        const closestCells = m.cell?.freeNeighbours.reduce(({distance, cells}, cell) => {
+            const d = getDistance(cell, player.cell!, board);
+            if (d < distance) {
+                cells = [];
+                distance = d;
+            }
+            if (d == distance) {
+                cells.push(cell);
+            }
+            return {distance, cells}
+        }, {distance: Number.MAX_SAFE_INTEGER, cells: [] as TCell[]}).cells!;
+        const moveTo = random.pickElement(closestCells);
+        mActions.push({type: TGameAction.move, targetCell: moveTo, actor: m});
+    }
+    return mActions;
+}
+
+function getActions(input: TInputActions, board: TCell[][], player: TCharacter, monsters: TCharacter[],random:SeededRandom) {
+    const actions = getPlayerActions(input, player, board);
+    if (actions.length > 0) {
+        monsters.forEach(m => {
+            const mActions = getMonsterActions(m, player, board, random);
+            actions.push(...mActions);
+        })
+    }
+    return actions;
+}
+
+export const InputActions = {
+    moveUp: "moveUp",
+    moveDown: "moveDown",
+    moveLeft: "moveLeft",
+    moveRight: "moveRight",
+    idle: "idle",
+} as const;
+export type TInputActions = (typeof InputActions)[keyof typeof InputActions]
+
+
+export const TGameAction = {
+    increaseStepCounter: "increaseStepCounter",
+    win: "win",
+    fight: "fight",
+    destroy: "destroy",
+    pickUp: "pickUp",
+    move: "move",
+}
+
+export type TAction = {
+    type: typeof TGameAction[keyof typeof TGameAction],
+    actor: TCharacter,
+    defender?: TCharacter,
+    item?: TItem,
+    targetCell?: TCell,
 }

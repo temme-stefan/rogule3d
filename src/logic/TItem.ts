@@ -13,7 +13,7 @@ export const DecorationTypes = {
     potted_plant: 1,
     rock: 2,
     wood_block: 3
-};
+} as const;
 
 const decorationTypes = Object.values(DecorationTypes) as (typeof DecorationTypes)[keyof typeof DecorationTypes][];
 
@@ -26,7 +26,7 @@ export const TreasureTypes = {
     shield: 5,
     dagger: 6,
     axe: 7
-}
+} as const;
 
 const treasureTypes = Object.values(TreasureTypes) as (typeof TreasureTypes)[keyof typeof TreasureTypes][];
 

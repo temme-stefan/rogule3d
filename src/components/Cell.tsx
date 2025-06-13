@@ -24,9 +24,9 @@ export function Cell({cell}:{cell:TCell}) {
             return cell.items[0].unicode;
         }
         switch (c.type){
-            case CellTypes.start:
             case CellTypes.gate:
                 return "⛩"
+            case CellTypes.start:
             case CellTypes.free:
             case CellTypes.wall:
                 return ""

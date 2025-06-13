@@ -3,7 +3,7 @@ import {Cell} from "./Cell.tsx";
 import './Board.css'
 export function Board({board}:{board:TCell[][]}) {
     return (
-        <article className={"board"}>
+        <section className={"board"}>
             {board.map((row, y) => (
                 <div key={y} className={"row"}>
                     {row.map((cell, x) => (
@@ -11,6 +11,6 @@ export function Board({board}:{board:TCell[][]}) {
                     ))}
                 </div>
             ))}
-        </article>
+        </section>
     )
 }
