@@ -16,6 +16,7 @@
         color:transparent;
         border: 2px solid darkblue;
         background-color: lightblue;
+        border-radius: 5px;
         svg{
             color:darkblue;
         }

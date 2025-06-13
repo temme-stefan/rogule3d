@@ -2,15 +2,16 @@ import {type TGame, type TInputActions, type TState} from "../logic/GameGenerato
 import './GameVisualisation2D.css'
 import {Board} from "./Board.tsx";
 import {InputButtons} from "./InputButtons.tsx";
+import {Players} from "./Players.tsx";
 
-export function GameVisualisation2D({game, handleInput, state}: {
+export function GameVisualisation2D({game, handleInput}: {
     game: TGame,
     state: TState,
     handleInput: (action: TInputActions) => void
 }) {
-    console.log(state);
     return (
         <>
+            <Players player={game.player!}/>
             <Board board={game.board}/>
             <InputButtons onInput={handleInput!}/>
         </>

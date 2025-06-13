@@ -1,0 +1,25 @@
+.players {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-height: calc(var(--cell-size) * 5 + 2rem);
+    .player {
+        display: flex;
+        flex-direction: row;
+        gap: 0.2rem;
+        .hp-bar{
+            display: flex;
+            flex-direction: row;
+        }
+        .hp {
+            background:linear-gradient(to right, #78B159 34%, #E6E7E8 65%);
+            background-size: 300% 100%;
+            transition: all 0.5s ease-out;
+            background-position: left;
+            &.hp-wound {
+                background-position: right;
+            }
+        }
+    }
+}
