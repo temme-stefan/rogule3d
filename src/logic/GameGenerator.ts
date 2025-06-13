@@ -47,7 +47,7 @@ export type TState = {
 
 export type TGame = {
     seed: string,
-    player?: TCharacter,
+    player?: TPlayer,
     monsters: TCharacter[],
     treasures: TItem[],
     decorations: TItem[],
