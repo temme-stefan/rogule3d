@@ -15,7 +15,7 @@
         .hp {
             background:linear-gradient(to right, #78B159 34%, #E6E7E8 65%);
             background-size: 300% 100%;
-            transition: all 0.5s ease-out;
+            transition: all 3s ease-out;
             background-position: left;
             &.hp-wound {
                 background-position: right;

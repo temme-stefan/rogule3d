@@ -1,7 +1,7 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 import {CellTypes, createMap, getDistance, nextCellOnShortestPath, type TCell} from "./Map.ts";
-import {createCharacter, type TCharacter, type TPlayer} from "./Character.ts";
-import {createDecoration, createTreasure, type TItem} from "./TItem.ts";
+import {createCharacter, isPlayer, type TCharacter, type TPlayer} from "./Character.ts";
+import {createDecoration, createTreasure, type TItem, TreasureTypes} from "./TItem.ts";
 
 export const defaultOptions = {
     size: {
@@ -122,6 +122,50 @@ function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations:
     return treasures;
 }
 
+function handleFight(combatActions: TAction[], random: SeededRandom) {
+    const transitions: TState["transitions"] = [];
+    combatActions.map(a => ({action: a, ini: random.nextInt(0, 5) + a.actor.level}))
+        .sort((a, b) => b.ini - a.ini)
+        .forEach(({action}) => {
+            if (action.actor.current > 0) {
+                let attack = random.nextInt(1, action.actor.level + 1);
+                let defense = random.nextInt(1, action.defender!.level);
+                if (isPlayer(action.actor)) {
+                    action.actor.inventory.forEach(i => {
+                        if (i.type == TreasureTypes.dagger) {
+                            attack += 1;
+                        }
+                        if (i.type == TreasureTypes.axe) {
+                            attack += 2;
+                        }
+                    })
+                }
+                if (isPlayer(action.defender!)) {
+                    action.defender.inventory.forEach(i => {
+                        if (i.type == TreasureTypes.shield) {
+                            defense += 2;
+                        }
+                    })
+                }
+                const damage = Math.max(0, attack - defense);
+                if (damage > 0) {
+                    transitions.push({type: TGameAction.fight, cell: action.defender!.cell!})
+                    action.defender!.current = Math.max(0, action.defender!.current - damage);
+                    if (action.defender!.current <= 0 && isPlayer(action.actor!)) {
+                        action.actor.exp += action.defender!.exp;
+                        action.actor.kills.push(action.defender!);
+                        const treasure = action.defender!.treasure;
+                        if(treasure){
+                            treasure.cell = action.defender!.cell;
+                            treasure.cell!.items.push(treasure);
+                        }
+                    }
+                }
+            }
+        })
+    return transitions;
+}
+
 export function createGame(seed: string, options: TOptions = defaultOptions) {
     const random = new SeededRandom(seed);
     const board = createMap(options, random);
@@ -162,6 +206,8 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         const grouped = Map.groupBy(actions, a => a.type);
         handleMove(grouped.get(TGameAction.move) ?? [], player, board);
         //resolve combat actions
+        const combatActions = grouped.get(TGameAction.fight) ?? [];
+        handleFight(combatActions, random);
         //player loose
         if (player.current <= 0) {
             state.state = "lose";
@@ -214,7 +260,7 @@ function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
             //monstermove!
             target = nextCellOnShortestPath(actor.cell!, player.cell!, map, (cell) => getDistance(actor.cell!, cell, map) < actor.vision);
         }
-        if (target && actor.current > 0 && target.characters.length === 0) {
+        if (target && actor.current > 0 && target.characters.filter(c => c.current > 0).length === 0) {
             target.characters.push(actor);
             actor.cell?.characters.splice(actor.cell?.characters.indexOf(actor), 1);
             actor.cell = target;
@@ -247,7 +293,7 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
         if (targetCell.type !== CellTypes.wall) {
             actions.push({type: TGameAction.increaseStepCounter, actor: player});
             let move = true;
-            if (targetCell.characters.length > 0) {
+            if (targetCell.characters.filter(c => c.current > 0).length > 0) {
                 actions.push({type: TGameAction.fight, actor: player, defender: targetCell.characters[0]});
                 move = false;
             }

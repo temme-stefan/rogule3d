@@ -111,6 +111,7 @@ export function createMap(options: TOptions, random: SeededRandom) {
     });
     pair[0].type = CellTypes.start;
     pair[1].type = CellTypes.gate;
+    computeAllDistances(map);
     return map;
 }
 
