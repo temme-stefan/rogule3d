@@ -155,7 +155,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                         action.actor.exp += action.defender!.exp;
                         action.actor.kills.push(action.defender!);
                         const treasure = action.defender!.treasure;
-                        if(treasure){
+                        if (treasure) {
                             treasure.cell = action.defender!.cell;
                             treasure.cell!.items.push(treasure);
                         }
@@ -216,9 +216,16 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         //resolve item actions
         const itemActions = grouped.get(TGameAction.pickUp) ?? [];
         itemActions.forEach(a => {
-            (a.actor as TPlayer).inventory.push(a.item!);
-            a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
-            a.item!.cell = undefined;
+            if (a.item!.type == TreasureTypes.health) {
+                if (a.actor.current < a.actor.hitpoints) {
+                    a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
+                    a.actor.current = Math.min(a.actor.current + 2, a.actor.hitpoints);
+                }
+            } else {
+                (a.actor as TPlayer).inventory.push(a.item!);
+                a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
+                a.item!.cell = undefined;
+            }
         });
         const destroyActions = grouped.get(TGameAction.destroy) ?? [];
         destroyActions.forEach(a => {

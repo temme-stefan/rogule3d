@@ -180,54 +180,55 @@ export function getDistance(cell1: TCell, cell2: TCell, map: TCell[][]) {
     }
     return distance.get(cell1)!.get(cell2)!;
 }
+
 export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell | null {
     // Menge der begehbaren Zellen für diese spezifische Situation
-    const walkableCells = new Set(map.flat().filter(c => c.type !== CellTypes.wall && c.characters.length === 0 && cellFilter(c)));
+    const walkableCells = new Set(map.flat().filter(c => c.type !== CellTypes.wall && c.characters.filter(c => c.current > 0).length === 0 && cellFilter(c)));
     walkableCells.add(from); // Die Startzelle ist immer begehbar
     walkableCells.add(to);   // Die Zielzelle ist immer begehbar
-    
+
     // Wenn Start und Ziel identisch sind
     if (from === to) {
         return from;
     }
-    
+
     // BFS für kürzesten Pfad
     const queue: TCell[] = [from];
     const visited = new Set<TCell>([from]);
     const cameFrom = new Map<TCell, TCell>();
-    
+
     while (queue.length > 0) {
         const current = queue.shift()!;
-        
+
         // Wenn das Ziel erreicht wurde
         if (current === to) {
             // Rekonstruiere den Pfad
             const path: TCell[] = [current];
             let temp = current;
-            
+
             while (cameFrom.has(temp)) {
                 temp = cameFrom.get(temp)!;
                 path.unshift(temp);
             }
-            
+
             // Gib die nächste Zelle im Pfad zurück
             return path.length > 1 ? path[1] : null;
         }
-        
+
         // Prüfe alle Nachbarn
         for (const neighbor of current.freeNeighbours) {
             // Überspringe nicht begehbare oder bereits besuchte Zellen
             if (!walkableCells.has(neighbor) || visited.has(neighbor)) {
                 continue;
             }
-            
+
             // Markiere als besucht
             visited.add(neighbor);
             cameFrom.set(neighbor, current);
             queue.push(neighbor);
         }
     }
-    
+
     // Kein Pfad gefunden
     return null;
 }
