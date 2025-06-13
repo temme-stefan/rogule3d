@@ -26,6 +26,8 @@ function App() {
         <main>
             {<button type={"button"} onClick={handlePlay}>Play</button>}
             {state?.state == "playing" && <GameVisualisation2D game={game!} state={state!} handleInput={handleInput}/>}
+            {state?.state == "win" && <h2>Winner</h2>}
+            {state?.state == "lose"&& <h2>Looser</h2>}
         </main>
         <footer></footer>
     </>)

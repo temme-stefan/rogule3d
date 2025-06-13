@@ -1,6 +1,6 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
-import {CellTypes, createMap, getDistance, type TCell} from "./Map.ts";
-import {createCharacter, type TCharacter} from "./Character.ts";
+import {CellTypes, createMap, getDistance, nextCellOnShortestPath, type TCell} from "./Map.ts";
+import {createCharacter, type TCharacter, type TPlayer} from "./Character.ts";
 import {createDecoration, createTreasure, type TItem} from "./TItem.ts";
 
 export const defaultOptions = {
@@ -14,8 +14,8 @@ export const defaultOptions = {
     },
     maxDeadEnds: 0,
     minDistanz: 10,
-    naturalHealing:{
-        steps:100,
+    naturalHealing: {
+        steps: 100,
         amount: 2
     },
     enemies: {
@@ -40,9 +40,9 @@ export const defaultOptions = {
 export type TOptions = typeof defaultOptions;
 
 export type TState = {
-    step:number,
-    transitions:any[],
-    state:"playing"|"win"|"lose"
+    step: number,
+    transitions: { type: TAction["type"], cell: TCell }[],
+    state: "playing" | "win" | "lose"
 }
 
 export type TGame = {
@@ -55,7 +55,7 @@ export type TGame = {
     board: TCell[][],
     options: TOptions,
     mover: (action: TInputActions) => TState,
-    state:TState
+    state: TState
 }
 
 
@@ -129,44 +129,95 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
     const monsters = addMonsters(random, board, player, options);
     const decorations = addDecorations(random, board, options);
     const treasures = addTreasures(random, monsters, decorations, options);
-    const state= {
-        step:0,
-        transitions:[],
-        state:"playing"
+    const state: TState = {
+        step: 0,
+        transitions: [],
+        state: "playing"
     }
     const mover = (input: TInputActions) => {
-        state.transitions=[];
-        const actions = getActions(input, board, player, monsters, random);
+        state.transitions = [];
+        const actions = [] as TAction[];
+        //add player actions
+        actions.push(...getPlayerActions(input, player, board));
+        if (!actions.some(a => a.type === TGameAction.increaseStepCounter)) {
+            return state;
+        }
+        //player move
+        const move = actions.findIndex(a => a.type === TGameAction.move);
+        if (move >= 0) {
+            const moveAction = actions[move];
+            actions.splice(move, 1);
+            handleMove([moveAction], player, board);
+        }
+        //player win
+        if (player.cell?.type === CellTypes.gate) {
+            state.state = "win";
+            return state;
+        }
+        //add monster actions
+        monsters.filter(m => m.current > 0).forEach(m => {
+            actions.push(...getMonsterActions(m, player, board));
+        })
+        //monster move
         const grouped = Map.groupBy(actions, a => a.type);
-
-        handleMove(grouped.get(TGameAction.move)??[],player);
-        if (grouped.has(TGameAction.increaseStepCounter)) {
-            state.step++;
-            if (player.current < player.hitpoints) {
-                player.counter!++;
-                if (player.counter! == options.naturalHealing.steps) {
-                    player.current = Math.min(player.current + 2, player.hitpoints);
-                    player.counter = 0
-                }
+        handleMove(grouped.get(TGameAction.move) ?? [], player, board);
+        //resolve combat actions
+        //player loose
+        if (player.current <= 0) {
+            state.state = "lose";
+            return state;
+        }
+        //resolve item actions
+        const itemActions = grouped.get(TGameAction.pickUp) ?? [];
+        itemActions.forEach(a => {
+            (a.actor as TPlayer).inventory.push(a.item!);
+            a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
+            a.item!.cell = undefined;
+        });
+        const destroyActions = grouped.get(TGameAction.destroy) ?? [];
+        destroyActions.forEach(a => {
+            const treasure = a.item!.treasure;
+            if (treasure) {
+                treasure.cell = a.item!.cell!;
+                treasure.cell!.items.push(treasure);
             }
-            if (player.current == player.hitpoints) {
-                player.counter = 0;
+            a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
+
+            state.transitions.push({type: TGameAction.destroy, cell: a.item!.cell!})
+            a.item!.cell = undefined;
+        })
+
+
+        // resolve step & natural Healing
+        state.step++;
+        if (player.current < player.hitpoints) {
+            player.counter!++;
+            if (player.counter! == options.naturalHealing.steps) {
+                player.current = Math.min(player.current + 2, player.hitpoints);
+                player.counter = 0
             }
-
-
+        }
+        if (player.current == player.hitpoints) {
+            player.counter = 0;
         }
         return state;
     }
     return {seed, player, monsters, treasures, decorations, board, options, random, mover, state} as TGame;
 }
 
-function handleMove(actions:TAction[], player:TCharacter) {
-    actions.sort((a, b) => (a.actor == player)?-1:( (b.actor==player)?1: (b.actor.exp - a.actor.exp)));
-    actions.forEach(({actor,targetCell}) => {
-        if (targetCell && actor.current>0 && targetCell.characters.length === 0) {
-            targetCell.characters.push(actor);
-            actor.cell?.characters.splice(actor.cell?.characters.indexOf(actor),1);
-            actor.cell = targetCell;
+function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
+    actions.sort((a, b) => (a.actor == player) ? -1 : ((b.actor == player) ? 1 : (b.actor.exp - a.actor.exp)));
+    console.log(actions);
+    actions.forEach(({actor, targetCell}) => {
+        let target = targetCell ?? null;
+        if (!target) {
+            //monstermove!
+            target = nextCellOnShortestPath(actor.cell!, player.cell!, map, (cell) => getDistance(actor.cell!, cell, map) < actor.vision);
+        }
+        if (target && actor.current > 0 && target.characters.length === 0) {
+            target.characters.push(actor);
+            actor.cell?.characters.splice(actor.cell?.characters.indexOf(actor), 1);
+            actor.cell = target;
         }
     })
 }
@@ -175,7 +226,7 @@ function handleMove(actions:TAction[], player:TCharacter) {
 function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight" | "idle", player: TCharacter, board: TCell[][]) {
     const actions: TAction[] = []
     if (input == InputActions.idle) {
-        actions.push({type: TGameAction.increaseStepCounter, actor:player});
+        actions.push({type: TGameAction.increaseStepCounter, actor: player});
     } else {
         const playerCell = player.cell!;
         let targetCell = playerCell;
@@ -194,7 +245,7 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
                 break;
         }
         if (targetCell.type !== CellTypes.wall) {
-            actions.push({type: TGameAction.increaseStepCounter, actor:player});
+            actions.push({type: TGameAction.increaseStepCounter, actor: player});
             let move = true;
             if (targetCell.characters.length > 0) {
                 actions.push({type: TGameAction.fight, actor: player, defender: targetCell.characters[0]});
@@ -203,14 +254,14 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
             if (targetCell.items.length > 0) {
                 const hasObstacle = targetCell.items[0].obstacle;
                 if (hasObstacle) {
-                    actions.push({type: TGameAction.destroy, item: targetCell.items[0], actor:player});
+                    actions.push({type: TGameAction.destroy, item: targetCell.items[0], actor: player});
                     move = false;
                 } else {
-                    actions.push({type: TGameAction.pickUp, item: targetCell.items[0], actor:player});
+                    actions.push({type: TGameAction.pickUp, item: targetCell.items[0], actor: player});
                 }
             }
             if (targetCell.type === CellTypes.gate) {
-                actions.push({type: TGameAction.win, actor:player});
+                actions.push({type: TGameAction.win, actor: player});
             }
             if (move) {
                 actions.push({type: TGameAction.move, targetCell: targetCell, actor: player});
@@ -220,38 +271,15 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
     return actions;
 }
 
-function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][], random: SeededRandom) {
+function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][]) {
     const mActions = [];
     const distance = getDistance(m.cell!, player.cell!, board);
     if (distance == 1) {
         mActions.push({type: TGameAction.fight, actor: m, defender: player});
     } else if (distance < m.vision) {
-        const closestCells = m.cell?.freeNeighbours.reduce(({distance, cells}, cell) => {
-            const d = getDistance(cell, player.cell!, board);
-            if (d < distance) {
-                cells = [];
-                distance = d;
-            }
-            if (d == distance) {
-                cells.push(cell);
-            }
-            return {distance, cells}
-        }, {distance: Number.MAX_SAFE_INTEGER, cells: [] as TCell[]}).cells!;
-        const moveTo = random.pickElement(closestCells);
-        mActions.push({type: TGameAction.move, targetCell: moveTo, actor: m});
+        mActions.push({type: TGameAction.move, actor: m});
     }
     return mActions;
-}
-
-function getActions(input: TInputActions, board: TCell[][], player: TCharacter, monsters: TCharacter[],random:SeededRandom) {
-    const actions = getPlayerActions(input, player, board);
-    if (actions.length > 0) {
-        monsters.forEach(m => {
-            const mActions = getMonsterActions(m, player, board, random);
-            actions.push(...mActions);
-        })
-    }
-    return actions;
 }
 
 export const InputActions = {

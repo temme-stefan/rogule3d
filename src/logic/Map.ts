@@ -102,7 +102,7 @@ export function createMap(options: TOptions, random: SeededRandom) {
         const isDoor = c.freeNeighbours.length === 2
             && (c.freeNeighbours[0].x == c.freeNeighbours[1].x || c.freeNeighbours[0].y == c.freeNeighbours[1].y)
             && c.freeNeighbours.some(n => n.freeNeighbours.length > 2
-                || n.neighbours.length == 2 && !(n.freeNeighbours[0].x == n.freeNeighbours[1].x || n.freeNeighbours[0].y == n.freeNeighbours[1].y)
+                || (n.neighbours.length == 2 && !(n.freeNeighbours[0].x == n.freeNeighbours[1].x || n.freeNeighbours[0].y == n.freeNeighbours[1].y))
             )
         ;
         if (isDoor) {
@@ -122,20 +122,111 @@ function getFreeNeighbours(cell: TCell, map: TCell[][]) {
     return getNeighbours(cell, map).filter(c => freeCellTypes.has(c.type));
 }
 
-const distance = new Map<TCell,Map<TCell,number>>;
+const distance = new Map<TCell, Map<TCell, number>>;
+
+function computeAllDistances(map: TCell[][]) {
+    const cells = map.flat().filter(c => c.type !== CellTypes.wall);
+    distance.clear();
+    // Initialisiere die Distanz-Map
+    cells.forEach(cell => {
+        distance.set(cell, new Map());
+        // Setze Distanz zu sich selbst auf 0
+        distance.get(cell)!.set(cell, 0);
+    });
+
+    // Floyd-Warshall Algorithmus für kürzeste Pfade zwischen allen Paaren
+    for (const cell of cells) {
+        // BFS für kürzeste Pfade von dieser Zelle aus
+        const queue: TCell[] = [cell];
+        const visited = new Set<TCell>([cell]);
+        let currentDistance = 0;
+        let currentLevelSize = 1;
+        let nextLevelSize = 0;
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+
+            // Setze die Distanz
+            if (!distance.get(cell)!.has(current)) {
+                distance.get(cell)!.set(current, currentDistance);
+            }
+            if (!distance.get(current)!.has(cell)) {
+                distance.get(current)!.set(cell, currentDistance);
+            }
+
+            // Füge Nachbarn zur Queue hinzu
+            for (const neighbor of current.freeNeighbours) {
+                if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    queue.push(neighbor);
+                    nextLevelSize++;
+                }
+            }
+
+            currentLevelSize--;
+            if (currentLevelSize === 0) {
+                currentLevelSize = nextLevelSize;
+                nextLevelSize = 0;
+                currentDistance++;
+            }
+        }
+    }
+}
+
 export function getDistance(cell1: TCell, cell2: TCell, map: TCell[][]) {
-    //AllPairs shortest path
-    map=map;
-    if (!distance.has(cell1)) {
-        distance.set(cell1,new Map());
-    }
-    if (!distance.has(cell2)) {
-        distance.set(cell2,new Map());
-    }
-    if (!distance.get(cell1)?.has(cell2)) {
-        const d = Math.abs(cell1.y - cell2.y) + Math.abs(cell1.x - cell2.x);
-        distance.get(cell1)!.set(cell2,d);
-        distance.get(cell2)!.set(cell1,d);
+    if (distance.size === 0) {
+        computeAllDistances(map);
     }
     return distance.get(cell1)!.get(cell2)!;
+}
+export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell | null {
+    // Menge der begehbaren Zellen für diese spezifische Situation
+    const walkableCells = new Set(map.flat().filter(c => c.type !== CellTypes.wall && c.characters.length === 0 && cellFilter(c)));
+    walkableCells.add(from); // Die Startzelle ist immer begehbar
+    walkableCells.add(to);   // Die Zielzelle ist immer begehbar
+    
+    // Wenn Start und Ziel identisch sind
+    if (from === to) {
+        return from;
+    }
+    
+    // BFS für kürzesten Pfad
+    const queue: TCell[] = [from];
+    const visited = new Set<TCell>([from]);
+    const cameFrom = new Map<TCell, TCell>();
+    
+    while (queue.length > 0) {
+        const current = queue.shift()!;
+        
+        // Wenn das Ziel erreicht wurde
+        if (current === to) {
+            // Rekonstruiere den Pfad
+            const path: TCell[] = [current];
+            let temp = current;
+            
+            while (cameFrom.has(temp)) {
+                temp = cameFrom.get(temp)!;
+                path.unshift(temp);
+            }
+            
+            // Gib die nächste Zelle im Pfad zurück
+            return path.length > 1 ? path[1] : null;
+        }
+        
+        // Prüfe alle Nachbarn
+        for (const neighbor of current.freeNeighbours) {
+            // Überspringe nicht begehbare oder bereits besuchte Zellen
+            if (!walkableCells.has(neighbor) || visited.has(neighbor)) {
+                continue;
+            }
+            
+            // Markiere als besucht
+            visited.add(neighbor);
+            cameFrom.set(neighbor, current);
+            queue.push(neighbor);
+        }
+    }
+    
+    // Kein Pfad gefunden
+    return null;
 }

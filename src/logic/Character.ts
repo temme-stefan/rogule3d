@@ -18,6 +18,7 @@ export type TCharacter = {
 export type TPlayer = TCharacter & {
     player: true
     level: number
+    inventory: TItem[]
 }
 export const CharacterTypes = {
     elf: 1,
@@ -42,6 +43,7 @@ export function createCharacter(player: boolean, random: SeededRandom) {
         p.player = true;
         Object.defineProperty(p, "level", {get: () => 1 + Math.floor((-1 + Math.sqrt(1 + 8 * p.exp)) / 2)});
         p.counter = 0;
+        p.inventory = [];
         return p;
     }
     const m = getMonstertypDefaults(random.pickElement(monsterTypes));

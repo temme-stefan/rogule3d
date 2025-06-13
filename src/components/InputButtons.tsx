@@ -27,7 +27,7 @@ export function InputButtons({onInput}: { onInput: (action: TInputActions) => vo
                     onInput(InputActions.moveRight);
                     catched = true;
                     break;
-                case " ":
+                case ".":
                     onInput(InputActions.idle);
                     catched = true;
                     break;

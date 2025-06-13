@@ -1,0 +1,6 @@
+.inventory {
+    display: flex;
+    flex-direction: row;
+    min-height: var(--cell-size);
+
+}
