@@ -5,12 +5,12 @@ import {createDecoration, createTreasure, type TItem, TreasureTypes} from "./TIt
 
 export const defaultOptions = {
     size: {
-        x: 20,
-        y: 20
+        x: 25,
+        y: 25
     },
     density: {
-        seed: 60,
-        min: 40
+        seed: 50,
+        min: 30
     },
     maxDeadEnds: 0,
     minDistanz: 10,
@@ -78,7 +78,7 @@ function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter,
     while (monsterxpSum > options.enemies.exp.max || monsterxpSum < options.enemies.exp.min) {
         monsterCells.forEach(c => {
             const distance = getDistance(c, player.cell!, board);
-            const difficulty = Math.max(1, Math.floor(distance * 0.7));
+            const difficulty = Math.max(1, Math.floor(distance * 0.5));
             cellMap.set(c, createCharacter(false, random, difficulty));
         });
         monsterxpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);

@@ -7,9 +7,9 @@ import {Endpage} from "./pages/Endpage.tsx";
 
 function App() {
     const [game, setGame] = useState<TGame | null>(null)
-    const [state, setState] = useState<TState | null>(null)
+    const [state, setState] = useState<TState | null | { state: "generating" }>(null)
     const handlePlay = () => {
-        setState(null);
+        setState({state: "generating"});
         setGame(createGame(new Date().toISOString()))
     }
 
@@ -25,9 +25,16 @@ function App() {
     return (<>
         <main>
             {!state && <Intro startGame={handlePlay}/>}
-
-            {state?.state === "playing" && <GameVisualisation2D game={game!} state={state!} handleInput={handleInput}/>}
-            {state && state?.state !== "playing" && <Endpage restartGame={handlePlay} game={game!} state={state!}/>}
+            {state?.state === "generating" ?
+                <div>Generating Game...</div>
+                :
+                <>
+                    {state?.state === "playing" &&
+                        <GameVisualisation2D game={game!} state={state!} handleInput={handleInput}/>}
+                    {state && state?.state !== "playing" &&
+                        <Endpage restartGame={handlePlay} game={game!} state={state!}/>}
+                </>
+            }
 
         </main>
         <footer></footer>

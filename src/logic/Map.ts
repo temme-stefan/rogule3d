@@ -85,7 +85,9 @@ export function createMap(options: TOptions, random: SeededRandom) {
 
         density = map.flat().filter(cell => cell.type === CellTypes.free).length / map.flat().length * 100;
 
-        const innerCells = map.flat().filter(cell => cell.type === CellTypes.free && getFreeNeighbours(cell, map).length == 4);
+        const innerCells = map.flat().filter(cell => cell.type === CellTypes.free && getFreeNeighbours(cell, map).length == 4
+            && [[-1, -1], [-1, 1], [1, -1], [1, 1]].filter(([dx, dy]) => map[cell.y + dy]?.[cell.x + dx]?.type === CellTypes.free).length >= 3
+        );
         for (let i = 0; i < innerCells.length; i++) {
             for (let j = i + 1; j < innerCells.length; j++) {
                 const d = Math.sqrt(Math.pow(innerCells[i].x - innerCells[j].x, 2) + Math.pow(innerCells[i].y - innerCells[j].y, 2));
