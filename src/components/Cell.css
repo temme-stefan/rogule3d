@@ -17,4 +17,7 @@
     &.near{
         opacity: 1;
     }
+    &.empty{
+        background-color: #E6E7E8;
+    }
 }

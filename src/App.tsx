@@ -9,6 +9,7 @@ function App() {
     const [game, setGame] = useState<TGame | null>(null)
     const [state, setState] = useState<TState | null>(null)
     const handlePlay = () => {
+        setState(null);
         setGame(createGame(new Date().toISOString()))
     }
 

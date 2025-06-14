@@ -162,6 +162,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                         if (treasure) {
                             treasure.cell = action.defender!.cell;
                             treasure.cell!.items.push(treasure);
+                            action.defender!.treasure = undefined;
                         }
                     }
                 }
@@ -237,6 +238,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
             if (treasure) {
                 treasure.cell = a.item!.cell!;
                 treasure.cell!.items.push(treasure);
+                a.item!.treasure = undefined;
             }
             a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
 

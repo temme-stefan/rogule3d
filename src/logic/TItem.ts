@@ -29,7 +29,7 @@ export const TreasureTypes = {
 } as const;
 
 const treasureTypes = Object.values(TreasureTypes) as (typeof TreasureTypes)[keyof typeof TreasureTypes][];
-
+export const combatItems = new Set([TreasureTypes.shield,TreasureTypes.dagger,TreasureTypes.axe]) as Set<typeof treasureTypes[keyof typeof treasureTypes]>;
 export type TItemTypes =
     typeof decorationTypes[keyof typeof decorationTypes]
     | typeof treasureTypes[keyof typeof treasureTypes];
