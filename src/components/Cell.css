@@ -1,0 +1,20 @@
+.cell{
+    &.free {
+        background-color: lightgoldenrodyellow;
+    }
+    &.door{
+        background-color: #E6E7E8;
+    }
+    &.wall {
+        background-color: #31373D;
+    }
+    &.far{
+        opacity: 0;
+    }
+    &.medium{
+        opacity: 0.7;
+    }
+    &.near{
+        opacity: 1;
+    }
+}

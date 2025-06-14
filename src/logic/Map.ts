@@ -115,6 +115,7 @@ export function createMap(options: TOptions, random: SeededRandom) {
     return map;
 }
 
+
 function getNeighbours(cell: TCell, map: TCell[][]) {
     return [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dx, dy]) => map[cell.y + dy]?.[cell.x + dx]).filter(Boolean);
 }

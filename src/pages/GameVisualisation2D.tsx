@@ -12,7 +12,7 @@ export function GameVisualisation2D({game, handleInput}: {
     return (
         <>
             <Players player={game.player!}/>
-            <Board board={game.board}/>
+            <Board board={game.board} player={game.player!}/>
             <Inventory player={game.player!}/>
             <InputButtons onInput={handleInput!}/>
         </>
