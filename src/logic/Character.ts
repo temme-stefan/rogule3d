@@ -64,7 +64,7 @@ export function createCharacter(player: boolean, random: SeededRandom, maxExp: n
 function getMonstertypDefaults(type: TCharacterTypes): Partial<TCharacter> {
     switch (type) {
         case CharacterTypes.elf:
-            return {type, exp: 3, hitpoints: 10, current: 10, vision: 10, unicode: "🧝"};
+            return {type, exp: 3, hitpoints: 10, current: 10, vision: 9, unicode: "🧝"};
         case CharacterTypes.rat:
             return {type, exp: 1, hitpoints: 2, current: 2, vision: 3, unicode: "🐀"};
         case CharacterTypes.bat:
