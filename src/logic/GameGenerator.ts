@@ -184,6 +184,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         state: "playing"
     }
     const mover = (input: TInputActions) => {
+        document.getElementById("debug")!.innerHTML="";
         state.transitions = [];
         const actions = [] as TAction[];
         //add player actions
@@ -205,7 +206,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         }
         //add monster actions
         monsters.filter(m => m.current > 0).forEach(m => {
-            actions.push(...getMonsterActions(m, player, board));
+            actions.push(...getMonsterActions(m, player, board, random));
         })
         //monster move
         const grouped = Map.groupBy(actions, a => a.type);
@@ -329,13 +330,16 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
     return actions;
 }
 
-function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][]) {
+function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][], random:SeededRandom) {
     const mActions = [];
     const distance = getDistance(m.cell!, player.cell!, board);
     if (distance == 1) {
         mActions.push({type: TGameAction.fight, actor: m, defender: player});
     } else if (distance < m.vision) {
-        mActions.push({type: TGameAction.move, actor: m});
+        const propOfMove = Math.min(0.9, (m.vision / (distance * distance)) + 0.3);
+        if (random.chance(propOfMove)) {
+            mActions.push({type: TGameAction.move, actor: m});
+        }
     }
     return mActions;
 }
