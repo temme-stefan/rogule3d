@@ -10,7 +10,7 @@
         aspect-ratio: 1;
         display: grid;
         grid-template: 10% 80% / 80%;
-        width: 4rem;
+        width: var(--button-size);
         justify-content: center;
         align-items: center;
         color:transparent;

@@ -1,31 +1,61 @@
 #root {
-    --cell-size: 1rem;
+    --cell-size: 1.5rem;
+    --button-size: 3rem;
     display: grid;
     grid-template:
         "header" auto
         "main" auto
         "footer" auto / 1fr;
-    main,header,footer{
+    max-width: 1024px;
+    margin: 0 auto;
+    main, header, footer {
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        gap:1rem;
+        gap: 1rem;
     }
-    header{
+
+    header {
         grid-area: header;
     }
-    main{
+
+    main {
         grid-area: main;
     }
-    footer{
+
+    footer {
         grid-area: footer;
     }
 }
 
+.cell {
+    aspect-ratio: 1;
+    width: var(--cell-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--cell-size) * 0.7);
+    border-radius: 5px;
+    border: 1px solid white;
+}
+
+.gameButton {
+    padding: 0.5rem;
+    background-color: lightblue;
+    border-radius: 5px;
+    border: 2px solid darkblue;
+    color: darkblue;
+    font-size:1.5rem;
+    font-weight: bold;
+
+}
+
 @media screen and (min-width: 1024px) {
-    #root{
-        --cell-size: 2rem;
+    body,html{
+        font-size: 20px;
+    }
+    #root {
         grid-template:
         "header" auto
         "main" 1fr

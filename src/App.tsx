@@ -1,7 +1,9 @@
 import './App.css'
 import {useEffect, useState} from "react";
 import {createGame, type TGame, type TInputActions, type TState} from "./logic/GameGenerator.ts";
-import {GameVisualisation2D} from "./components/GameVisualisation2D.tsx";
+import {GameVisualisation2D} from "./pages/GameVisualisation2D.tsx";
+import {Intro} from "./pages/Intro.tsx";
+import {Endpage} from "./pages/Endpage.tsx";
 
 function App() {
     const [game, setGame] = useState<TGame | null>(null)
@@ -20,14 +22,12 @@ function App() {
     }
 
     return (<>
-        <header>
-            <h1>Rogule 3D</h1>
-        </header>
         <main>
-            {<button type={"button"} onClick={handlePlay}>Play</button>}
-            {state?.state == "playing" && <GameVisualisation2D game={game!} state={state!} handleInput={handleInput}/>}
-            {state?.state == "win" && <h2>Winner</h2>}
-            {state?.state == "lose"&& <h2>Looser</h2>}
+            {!state && <Intro startGame={handlePlay}/>}
+
+            {state?.state === "playing" && <GameVisualisation2D game={game!} state={state!} handleInput={handleInput}/>}
+            {state && state?.state !== "playing" && <Endpage restartGame={handlePlay} game={game!} state={state!}/>}
+
         </main>
         <footer></footer>
     </>)

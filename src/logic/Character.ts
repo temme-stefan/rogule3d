@@ -18,7 +18,7 @@ export type TCharacter = {
 export type TPlayer = TCharacter & {
     player: true
     inventory: TItem[]
-    kills:TCharacter[];
+    kills: TCharacter[];
 }
 
 export const isPlayer = (character: TCharacter): character is TPlayer => {
@@ -41,7 +41,7 @@ export const CharacterTypes = {
 export type TCharacterTypes = typeof CharacterTypes[keyof typeof CharacterTypes]
 export const monsterTypes = Object.values(CharacterTypes).filter(c => c != CharacterTypes.elf) as TCharacterTypes[];
 
-export function createCharacter(player: boolean, random: SeededRandom) {
+export function createCharacter(player: boolean, random: SeededRandom, maxExp: number = 10) {
     if (player) {
         const p = getMonstertypDefaults(CharacterTypes.elf) as TPlayer;
         p.player = true;
@@ -51,7 +51,10 @@ export function createCharacter(player: boolean, random: SeededRandom) {
         p.kills = [];
         return p;
     }
-    const m = getMonstertypDefaults(random.pickElement(monsterTypes));
+    let m = getMonstertypDefaults(random.pickElement(monsterTypes));
+    while (m.exp! > maxExp) {
+        m = getMonstertypDefaults(random.pickElement(monsterTypes));
+    }
     Object.defineProperty(m, "level", {get: () => m.exp});
     return m as TCharacter;
 
@@ -61,7 +64,7 @@ export function createCharacter(player: boolean, random: SeededRandom) {
 function getMonstertypDefaults(type: TCharacterTypes): Partial<TCharacter> {
     switch (type) {
         case CharacterTypes.elf:
-            return {type, exp: 6, hitpoints: 10, current: 10, vision: 10, unicode: "🧝"};
+            return {type, exp: 3, hitpoints: 10, current: 10, vision: 10, unicode: "🧝"};
         case CharacterTypes.rat:
             return {type, exp: 1, hitpoints: 2, current: 2, vision: 3, unicode: "🐀"};
         case CharacterTypes.bat:

@@ -1,9 +1,9 @@
 import {type TGame, type TInputActions, type TState} from "../logic/GameGenerator.ts";
 import './GameVisualisation2D.css'
-import {Board} from "./Board.tsx";
-import {InputButtons} from "./InputButtons.tsx";
-import {Players} from "./Players.tsx";
-import {Inventory} from "./Inventory.tsx";
+import {Board} from "../components/Board.tsx";
+import {InputButtons} from "../components/InputButtons.tsx";
+import {Players} from "../components/Players.tsx";
+import {Inventory} from "../components/Inventory.tsx";
 export function GameVisualisation2D({game, handleInput}: {
     game: TGame,
     state: TState,

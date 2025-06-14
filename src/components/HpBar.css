@@ -1,0 +1,13 @@
+.hp-bar{
+    display: flex;
+    flex-direction: row;
+}
+.hp {
+    background:linear-gradient(to right, #78B159 34%, #E6E7E8 65%);
+    background-size: 300% 100%;
+    transition: all 0.7s ease-out;
+    background-position: left;
+    &.hp-wound {
+        background-position: right;
+    }
+}

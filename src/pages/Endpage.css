@@ -1,0 +1,22 @@
+
+.endscreen {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    .results{
+        padding:1rem;
+        border: 1px solid lightgray;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+        >div{
+            display: flex;
+            flex-direction: row;
+            align-content: center;
+        }
+
+    }
+}

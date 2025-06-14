@@ -70,19 +70,23 @@ function getEmptyCells(count: number, map: TCell[][], random: SeededRandom) {
 
 function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions) {
     const monsterCount = random.nextInt(options.enemies.min, options.enemies.max);
+    const cellMap = new Map<TCell,TCharacter>();
+
     let monsterxpSum = 0;
     let monsters: TCharacter[] = [];
-    while (monsterxpSum > options.enemies.exp.max || monsterxpSum < options.enemies.exp.min) {
-        monsters = Array.from({length: monsterCount}, () => createCharacter(false, random));
-        monsterxpSum = monsters.map(m => m.exp).reduce((a, b) => a + b, 0);
-    }
-    monsters.sort((a, b) => a.exp - b.exp);
     const monsterCells = getEmptyCells(monsterCount, board, random);
-    monsterCells.sort((a, b) => getDistance(a, player.cell!, board) - getDistance(b, player.cell!, board));
-    monsters.forEach((m, i) => {
-        const cell = monsterCells[i];
+    while (monsterxpSum > options.enemies.exp.max || monsterxpSum < options.enemies.exp.min) {
+        monsterCells.forEach(c => {
+            const distance = getDistance(c, player.cell!, board);
+            const difficulty = Math.max(1, Math.floor(distance * 0.7));
+            cellMap.set(c, createCharacter(false, random, difficulty));
+        });
+        monsterxpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);
+    }
+    [...cellMap.entries()].forEach(([cell,m])=>{
         cell.characters.push(m);
         m.cell = cell;
+        monsters.push(m)
     })
     return monsters;
 }
@@ -260,7 +264,6 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
 
 function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
     actions.sort((a, b) => (a.actor == player) ? -1 : ((b.actor == player) ? 1 : (b.actor.exp - a.actor.exp)));
-    console.log(actions);
     actions.forEach(({actor, targetCell}) => {
         let target = targetCell ?? null;
         if (!target) {

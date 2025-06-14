@@ -1,22 +1,15 @@
 import type {TCharacter} from "../logic/Character.ts";
 import './Players.css'
+import {HpBar} from "./HpBar.tsx";
 
 function Player({player}: { player: TCharacter }) {
-    const wounds = player.hitpoints - player.current;
+    const current = player.current
+    const total = player.hitpoints;
     return (
         <article className={"player"}>
             <div className={"portrait cell"}>{player.unicode}</div>
             <div className={"power cell"}>{player.level}</div>
-            <div className={"hp-bar"}>
-                {
-                    Array(player.current).fill(0)
-                        .map((_, i) => <span key={i} className={"hp cell"}></span>)
-                }
-                {
-                    Array(wounds).fill(0)
-                        .map((_, i) => <span key={player.current + i} className={"hp hp-wound cell"}></span>)
-                }
-            </div>
+            <HpBar current={current} total={total}/>
         </article>
     );
 }
