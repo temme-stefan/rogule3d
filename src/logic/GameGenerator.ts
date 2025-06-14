@@ -301,7 +301,7 @@ function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight
             actions.push({type: TGameAction.increaseStepCounter, actor: player});
             let move = true;
             if (targetCell.characters.filter(c => c.current > 0).length > 0) {
-                actions.push({type: TGameAction.fight, actor: player, defender: targetCell.characters[0]});
+                actions.push({type: TGameAction.fight, actor: player, defender: targetCell.characters.filter(c => c.current > 0)[0]});
                 move = false;
             }
             if (targetCell.items.length > 0) {
