@@ -37,11 +37,15 @@ export const CharacterTypes = {
     dragon: 11,
     ogre: 12,
     genie: 13
-}
+} as const;
 export type TCharacterTypes = typeof CharacterTypes[keyof typeof CharacterTypes]
 export const monsterTypes = Object.values(CharacterTypes).filter(c => c != CharacterTypes.elf) as TCharacterTypes[];
 
-export function createCharacter(player: boolean, random: SeededRandom, maxExp: number = 10) {
+const monsterTypesByStrength = monsterTypes.map(getMonstertypDefaults)
+    .sort((a, b) => a.exp == b.exp ? (a.hitpoints! - b.hitpoints!) : (a.exp! - b.exp!))
+    .map(m => m.type) as TCharacterTypes[];
+
+export function createCharacter(player: boolean, random: SeededRandom, difficulty: number = 1) {
     if (player) {
         const p = getMonstertypDefaults(CharacterTypes.elf) as TPlayer;
         p.player = true;
@@ -51,10 +55,14 @@ export function createCharacter(player: boolean, random: SeededRandom, maxExp: n
         p.kills = [];
         return p;
     }
-    let m = getMonstertypDefaults(random.pickElement(monsterTypes));
-    while (m.exp! > maxExp) {
-        m = getMonstertypDefaults(random.pickElement(monsterTypes));
-    }
+    const targetIndex = Math.floor(monsterTypesByStrength.length*difficulty);
+
+    const weightedMonsterSubtable: [TCharacterTypes,number][] =
+    [[-2,1],[-1,2],[0,6],[1,2],[2,1]]
+        .map(([offset,weight])=>[Math.min(Math.max(0,targetIndex+offset),monsterTypesByStrength.length-1),weight])
+        .map(([index,weight])=> [monsterTypesByStrength[index],weight] );
+
+    const m = getMonstertypDefaults(random.pickWeightedElement(weightedMonsterSubtable));
     Object.defineProperty(m, "level", {get: () => m.exp});
     return m as TCharacter;
 

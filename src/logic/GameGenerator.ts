@@ -1,12 +1,12 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 import {CellTypes, createMap, getDistance, nextCellOnShortestPath, type TCell} from "./Map.ts";
 import {createCharacter, isPlayer, type TCharacter, type TPlayer} from "./Character.ts";
-import {createDecoration, createTreasure, type TItem, TreasureTypes} from "./TItem.ts";
+import {combatItems, createDecoration, createTreasure, type TItem, TreasureTypes} from "./TItem.ts";
 
 export const defaultOptions = {
     size: {
-        x: 30,
-        y: 30
+        x: 25,
+        y: 25
     },
     density: {
         seed: 60,
@@ -23,7 +23,7 @@ export const defaultOptions = {
         max: 5,
         exp: {
             min: 5,
-            max: 30
+            max: 20
         },
     },
     decorations: {
@@ -68,17 +68,18 @@ function getEmptyCells(count: number, map: TCell[][], random: SeededRandom) {
     return [...cells];
 }
 
-function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions) {
+function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions, startGoalDistance:number) {
     const monsterCount = random.nextInt(options.enemies.min, options.enemies.max);
     const cellMap = new Map<TCell, TCharacter>();
 
     let monsterxpSum = 0;
     let monsters: TCharacter[] = [];
-    const monsterCells = getEmptyCells(monsterCount, board, random);
     while (monsterxpSum > options.enemies.exp.max || monsterxpSum < options.enemies.exp.min) {
+        const monsterCells = getEmptyCells(monsterCount, board, random);
+        cellMap.clear();
         monsterCells.forEach(c => {
             const distance = getDistance(c, player.cell!, board);
-            const difficulty = Math.max(1, Math.floor(distance * 0.5));
+            const difficulty = Math.min(1, distance/startGoalDistance * 0.75);
             cellMap.set(c, createCharacter(false, random, difficulty));
         });
         monsterxpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);
@@ -113,7 +114,11 @@ function addDecorations(random: SeededRandom, board: TCell[][], options: TOption
 function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], options: TOptions) {
     const treasureKeeperCount = monsters.length + decorations.length;
     let treasureCount = random.nextInt(options.treasures.min, Math.min(options.treasures.max, treasureKeeperCount));
-    const treasures: TItem[] = Array.from({length: treasureCount}).map(_ => createTreasure(random));
+
+    let treasures: TItem[] = Array.from({length: treasureCount}).map(_ => createTreasure(random));
+    while (treasures.every(t => combatItems.has(t.type))) {
+        treasures  = treasures.map(_ => createTreasure(random));
+    }
     const possibleBearer = [...monsters, ...decorations];
     const treasureBearer = new Set<{ treasure?: TItem }>();
     while (treasureBearer.size < treasureCount) {
@@ -178,8 +183,9 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
 export function createGame(seed: string, options: TOptions = defaultOptions) {
     const random = new SeededRandom(seed);
     const board = createMap(options, random);
+    const distance = getDistance(board.flat().find(c => c.type === CellTypes.start)!,board.flat().find(c => c.type === CellTypes.gate)!,board);
     const player = addPlayer(random, board);
-    const monsters = addMonsters(random, board, player, options);
+    const monsters = addMonsters(random, board, player, options,distance);
     const decorations = addDecorations(random, board, options);
     const treasures = addTreasures(random, monsters, decorations, options);
     const state: TState = {
