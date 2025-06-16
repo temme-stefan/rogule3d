@@ -5,12 +5,12 @@ import {createDecoration, createTreasure, type TItem, TreasureTypes} from "./TIt
 
 export const defaultOptions = {
     size: {
-        x: 25,
-        y: 25
+        x: 30,
+        y: 30
     },
     density: {
-        seed: 50,
-        min: 30
+        seed: 60,
+        min: 40
     },
     maxDeadEnds: 0,
     minDistanz: 10,
@@ -132,15 +132,17 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
         .sort((a, b) => b.ini - a.ini)
         .forEach(({action}) => {
             if (action.actor.current > 0 && action.defender!.current > 0) {
-                let attack = random.nextInt(1, action.actor.level);
-                let defense = random.nextInt(1, action.defender!.level);
+                const isHit = random.chance(5/6);
+                let damage = random.nextInt(0, action.actor.level-1);
+                let defense=0;
+
                 if (isPlayer(action.actor)) {
                     action.actor.inventory.forEach(i => {
                         if (i.type == TreasureTypes.dagger) {
-                            attack += 1;
+                            damage += 1;
                         }
                         if (i.type == TreasureTypes.axe) {
-                            attack += 2;
+                            damage += 2;
                         }
                     })
                 }
@@ -151,8 +153,8 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                         }
                     })
                 }
-                const damage = Math.max(0, attack - defense);
-                if (damage > 0) {
+                damage = Math.max(0, damage - defense);
+                if (damage > 0 && isHit) {
                     transitions.push({type: GameEvent.damaged, cell: action.defender!.cell!})
                     action.defender!.current = Math.max(0, action.defender!.current - damage);
                     if (action.defender!.current <= 0 && isPlayer(action.actor!)) {

@@ -1,12 +1,13 @@
 #root {
-    --cell-size: min(calc(95vw/17) , 1.5rem);
+    --cell-size: min(calc(95vw / 17), 1.5rem);
     --button-size: 3rem;
     display: grid;
     grid-template:
         "header" auto
         "main" auto
         "footer" auto / 1fr;
-    max-width: min(1024px,95vw);
+
+    max-width: min(1024px, 95svw);
     margin: 0 auto;
     main, header, footer {
         display: flex;
@@ -46,15 +47,16 @@
     border-radius: 5px;
     border: 2px solid darkblue;
     color: darkblue;
-    font-size:1.5rem;
+    font-size: 1.5rem;
     font-weight: bold;
 
 }
 
 @media screen and (min-width: 1024px) {
-    body,html{
+    body, html {
         font-size: 20px;
     }
+
     #root {
         grid-template:
         "header" auto
