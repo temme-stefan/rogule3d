@@ -132,7 +132,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
         .sort((a, b) => b.ini - a.ini)
         .forEach(({action}) => {
             if (action.actor.current > 0 && action.defender!.current > 0) {
-                let attack = random.nextInt(1, action.actor.level + 1);
+                let attack = random.nextInt(1, action.actor.level);
                 let defense = random.nextInt(1, action.defender!.level);
                 if (isPlayer(action.actor)) {
                     action.actor.inventory.forEach(i => {
