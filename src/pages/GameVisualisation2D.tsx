@@ -4,7 +4,7 @@ import {Board} from "../components/Board.tsx";
 import {InputButtons} from "../components/InputButtons.tsx";
 import {Players} from "../components/Players.tsx";
 import {Inventory} from "../components/Inventory.tsx";
-export function GameVisualisation2D({game, handleInput}: {
+export function GameVisualisation2D({game, handleInput,state}: {
     game: TGame,
     state: TState,
     handleInput: (action: TInputActions) => void
@@ -12,7 +12,7 @@ export function GameVisualisation2D({game, handleInput}: {
     return (
         <>
             <Players player={game.player!}/>
-            <Board board={game.board} player={game.player!} full={new URLSearchParams(location.search).has("debug")}/>
+            <Board board={game.board} player={game.player!} full={new URLSearchParams(location.search).has("debug")} events={state.transitions} step={state.step}/>
             <Inventory player={game.player!}/>
             <InputButtons onInput={handleInput!}/>
         </>

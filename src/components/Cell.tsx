@@ -1,6 +1,8 @@
 import {CellTypes, type TCell} from "../logic/Map.ts";
 import "./Cell.css"
-export function Cell({cell, className = ""}: { cell: TCell | undefined, className?: string }) {
+import {GameEvent, type TGameEvent} from "../logic/GameGenerator.ts";
+export function Cell({cell, className = "", event}: { cell: TCell | undefined, className?: string, event?: TGameEvent }) {
+    event && console.log(event);
     const cellTypeToClass = () => {
         switch (cell?.type) {
             case CellTypes.start:
@@ -39,5 +41,18 @@ export function Cell({cell, className = ""}: { cell: TCell | undefined, classNam
         }
     }
 
-    return <span className={[className,"cell",cellTypeToClass()].join(" ")}>{cellTypeToContent()}</span>
+    const getEventContent=()=>{
+        switch (event){
+            case GameEvent.damaged:
+                return "💥";
+            case GameEvent.blocked:
+                return "🛡️"
+            case GameEvent.destroyed:
+            default:return "☁️"
+        }
+    }
+
+    return <span className={[className,"cell",cellTypeToClass()].join(" ")}>{cellTypeToContent()}
+        {event && <span className={"event "+event}>{getEventContent()}</span>}
+        </span>
 }
