@@ -1,4 +1,4 @@
-import type {TCell} from "./Map.ts";
+import {serializeCell, type TCell} from "./Map.ts";
 import type {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 
 export type TItem = {
@@ -85,4 +85,22 @@ function getDecoration(type: TItemTypes): TItem {
             break;
     }
     return {type, obstacle: true, unicode};
+}
+
+type TSerializedItem = {
+    type: TItemTypes,
+    obstacle: boolean,
+    unicode: string,
+    cell?: ReturnType<typeof serializeCell>,
+    treasure?: TSerializedItem,
+}
+
+export const serializeItem = (item: TItem): TSerializedItem => {
+    return {
+        type: item.type,
+        obstacle: item.obstacle,
+        unicode: item.unicode,
+        cell: item.cell ? serializeCell(item.cell) : undefined,
+        treasure: item.treasure ? serializeItem(item.treasure) : undefined,
+    }
 }

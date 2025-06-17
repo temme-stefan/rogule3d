@@ -1,7 +1,7 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
-import {CellTypes, createMap, getDistance, nextCellOnShortestPath, type TCell} from "./Map.ts";
-import {createCharacter, isPlayer, type TCharacter, type TPlayer} from "./Character.ts";
-import {combatItems, createDecoration, createTreasure, type TItem, TreasureTypes} from "./TItem.ts";
+import {CellTypes, createMap, getDistance, nextCellOnShortestPath, serializeCell, type TCell} from "./Map.ts";
+import {createCharacter, isPlayer, serializeCharacter, type TCharacter, type TPlayer} from "./Character.ts";
+import {combatItems, createDecoration, createTreasure, serializeItem, type TItem, TreasureTypes} from "./TItem.ts";
 
 export const defaultOptions = {
     size: {
@@ -194,7 +194,6 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         state: "playing"
     }
     const mover = (input: TInputActions) => {
-        document.getElementById("debug")!.innerHTML = "";
         state.transitions = [];
         const actions = [] as TAction[];
         //add player actions
@@ -292,7 +291,7 @@ function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
 }
 
 
-function getPlayerActions(input: "moveUp" | "moveDown" | "moveLeft" | "moveRight" | "idle", player: TCharacter, board: TCell[][]) {
+function getPlayerActions(input: TInputActions, player: TCharacter, board: TCell[][]) {
     const actions: TAction[] = []
     if (input == InputActions.idle) {
         actions.push({type: GameAction.increaseStepCounter, actor: player});
@@ -389,4 +388,21 @@ export type TAction = {
     defender?: TCharacter,
     item?: TItem,
     targetCell?: TCell,
+}
+
+export const serializeGame = (game: TGame) => {
+    return {
+        seed: game.seed,
+        player: serializeCharacter(game.player!),
+        monsters: game.monsters.map(serializeCharacter),
+        treasures: game.treasures.map(serializeItem),
+        decorations: game.decorations.map(serializeItem),
+        board: game.board.map(row => row.map(serializeCell)),
+        options: game.options,
+        state: {...game.state, transitions: game.state.transitions.map(({type, cell}) => ({type, cell: serializeCell(cell)})) },
+    }
+}
+
+export const stringifyGame= (game: TGame) => {
+    return JSON.stringify(serializeGame(game));
 }

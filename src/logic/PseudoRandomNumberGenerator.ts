@@ -93,7 +93,8 @@ export class SeededRandom {
                 return element;
             }
         }
-
+        // Due to JS rounding this is a fallback. TotalWeight might be bigger than the sum of weights.
+        // example: 0.1+0.2 => 0.30000000000000004
         return array[array.length - 1][0];
     }
 }

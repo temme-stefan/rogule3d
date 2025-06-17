@@ -1,5 +1,5 @@
-import type {TItem} from "./TItem.ts";
-import {type TCell} from "./Map.ts";
+import {serializeItem, type TItem} from "./TItem.ts";
+import {serializeCell, type TCell} from "./Map.ts";
 import type {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 
 export type TCharacter = {
@@ -55,12 +55,12 @@ export function createCharacter(player: boolean, random: SeededRandom, difficult
         p.kills = [];
         return p;
     }
-    const targetIndex = Math.floor(monsterTypesByStrength.length*difficulty);
+    const targetIndex = Math.floor(monsterTypesByStrength.length * difficulty);
 
-    const weightedMonsterSubtable: [TCharacterTypes,number][] =
-    [[-2,1],[-1,2],[0,6],[1,2],[2,1]]
-        .map(([offset,weight])=>[Math.min(Math.max(0,targetIndex+offset),monsterTypesByStrength.length-1),weight])
-        .map(([index,weight])=> [monsterTypesByStrength[index],weight] );
+    const weightedMonsterSubtable: [TCharacterTypes, number][] =
+        [[-2, 1], [-1, 2], [0, 6], [1, 2], [2, 1]]
+            .map(([offset, weight]) => [Math.min(Math.max(0, targetIndex + offset), monsterTypesByStrength.length - 1), weight])
+            .map(([index, weight]) => [monsterTypesByStrength[index], weight]);
 
     const m = getMonstertypDefaults(random.pickWeightedElement(weightedMonsterSubtable));
     Object.defineProperty(m, "level", {get: () => m.exp});
@@ -95,7 +95,39 @@ function getMonstertypDefaults(type: TCharacterTypes): Partial<TCharacter> {
             return {type, exp: 8, hitpoints: 15, current: 15, vision: 10, unicode: "🐉"};
         case CharacterTypes.trex:
             return {type, exp: 10, hitpoints: 12, current: 12, vision: 15, unicode: "🦖"};
-        default:
-            return {type, exp: 3, hitpoints: 10, current: 10, vision: 10, unicode: "?"};
     }
+}
+
+
+type TSerializedChar = {
+    type: TCharacterTypes,
+    exp: number,
+    vision: number,
+    hitpoints: number,
+    current: number,
+    unicode: string,
+    cell: ReturnType<typeof serializeCell>,
+    player: boolean,
+    inventory: ReturnType<typeof serializeItem>[],
+    kills: TSerializedChar[]
+}
+export const serializeCharacter = (character: TCharacter) => {
+    const base: TSerializedChar = {
+        type: character.type,
+        exp: character.exp,
+        vision: character.vision,
+        hitpoints: character.hitpoints,
+        current: character.current,
+        unicode: character.unicode,
+        cell: serializeCell(character.cell!),
+        player: false,
+        inventory: [],
+        kills: [],
+    }
+    if (isPlayer(character)) {
+        base.player = character.player;
+        base.inventory = character.inventory.map(serializeItem);
+        base.kills = character.kills.map(serializeCharacter);
+    }
+    return base
 }

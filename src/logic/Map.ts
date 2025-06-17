@@ -126,9 +126,11 @@ function getFreeNeighbours(cell: TCell, map: TCell[][]) {
     return getNeighbours(cell, map).filter(c => freeCellTypes.has(c.type));
 }
 
-const distance = new Map<TCell, Map<TCell, number>>;
+const distanceMaps = new Map<TCell[][],Map<TCell, Map<TCell, number>>>;
 
 function computeAllDistances(map: TCell[][]) {
+    const distance =  distanceMaps.get(map) ?? distanceMaps.set(map,new Map()).get(map)!;
+
     const cells = map.flat().filter(c => c.type !== CellTypes.wall);
     distance.clear();
     // Initialisiere die Distanz-Map
@@ -178,10 +180,7 @@ function computeAllDistances(map: TCell[][]) {
 }
 
 export function getDistance(cell1: TCell, cell2: TCell, map: TCell[][]) {
-    if (distance.size === 0) {
-        computeAllDistances(map);
-    }
-    return distance.get(cell1)!.get(cell2)!;
+    return distanceMaps.get(map)?.get(cell1)!.get(cell2)! ?? Infinity;
 }
 
 export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell | null {
@@ -234,4 +233,12 @@ export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], c
 
     // Kein Pfad gefunden
     return null;
+}
+
+export const serializeCell = (cell: TCell) => {
+    return {
+        x: cell.x,
+        y: cell.y,
+        type: cell.type
+    }
 }
