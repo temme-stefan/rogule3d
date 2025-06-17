@@ -76,11 +76,14 @@ export class SeededRandom {
             throw new Error("Array cannot be empty");
         }
 
-        const totalWeight = array.reduce((sum, [_, weight]) => sum + weight, 0);
-
-        if (totalWeight <= 0) {
-            throw new Error("Total weight must be positive");
+        // Überprüfe, dass alle Gewichte positiv sind
+        for (const [_, weight] of array) {
+            if (weight <= 0) {
+                throw new Error("All weights must be positive");
+            }
         }
+
+        const totalWeight = array.reduce((sum, [_, weight]) => sum + weight, 0);
 
         let random = this.nextInRange(0, totalWeight);
 
