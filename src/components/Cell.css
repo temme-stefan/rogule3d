@@ -36,25 +36,25 @@
     &.left {
         position: absolute;
         z-index: 3;
-        animation: left 0.5s ease-out;
+        animation: left 0.5s linear;
     }
 
     &.right {
         position: absolute;
         z-index: 3;
-        animation: right 0.5s ease-out;
+        animation: right 0.5s linear;
     }
 
     &.up {
         position: absolute;
         z-index: 3;
-        animation: up 0.5s ease-out;
+        animation: up 0.5s linear;
     }
 
     &.down {
         position: absolute;
         z-index: 3;
-        animation: down 0.5s ease-out;
+        animation: down 0.5s linear;
     }
 
     .event {
