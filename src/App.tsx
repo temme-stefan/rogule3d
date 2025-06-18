@@ -12,7 +12,7 @@ function App() {
     const [debug] = useState(new URLSearchParams(location.search).has("debug"))
     const handlePlay = () => {
         setState({state: "generating"});
-        setGame(createGame(new Date().toISOString()))
+        setGame(createGame(new URLSearchParams(location.search).get('seed') ?? new Date().toISOString()))
     }
 
     useEffect(() => {

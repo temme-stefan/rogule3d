@@ -23,16 +23,18 @@ export const defaultOptions = {
         max: 5,
         exp: {
             min: 5,
-            max: 20
+            max: Number.MAX_SAFE_INTEGER,
         },
     },
     decorations: {
-        min: 3,
-        max: 10
+        min: 15,
+        max: 15
     },
     treasures: {
-        min: 1,
-        max: 10
+        propabilty: {
+            enemy: 0.5,
+            decoration: 0.9
+        }
     },
 
 } as const
@@ -41,7 +43,7 @@ export type TOptions = typeof defaultOptions;
 
 export type TState = {
     step: number,
-    transitions: { type: typeof GameEvent[keyof typeof GameEvent], cell: TCell , character?: TCharacter}[],
+    transitions: { type: typeof GameEvent[keyof typeof GameEvent], cell: TCell, character?: TCharacter }[],
     state: "playing" | "win" | "lose"
 }
 
@@ -68,21 +70,21 @@ function getEmptyCells(count: number, map: TCell[][], random: SeededRandom) {
     return [...cells];
 }
 
-function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions, startGoalDistance:number) {
+function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions, startGoalDistance: number) {
     const monsterCount = random.nextInt(options.enemies.min, options.enemies.max);
     const cellMap = new Map<TCell, TCharacter>();
 
-    let monsterxpSum = 0;
+    let monsterXpSum = 0;
     let monsters: TCharacter[] = [];
-    while (monsterxpSum > options.enemies.exp.max || monsterxpSum < options.enemies.exp.min) {
+    while (monsterXpSum > options.enemies.exp.max || monsterXpSum < options.enemies.exp.min) {
         const monsterCells = getEmptyCells(monsterCount, board, random);
         cellMap.clear();
         monsterCells.forEach(c => {
             const distance = getDistance(c, player.cell!, board);
-            const difficulty = Math.min(1, distance/startGoalDistance * 0.75);
+            const difficulty = Math.min(1, distance / startGoalDistance * 0.75);
             cellMap.set(c, createCharacter(false, random, difficulty));
         });
-        monsterxpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);
+        monsterXpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);
     }
     [...cellMap.entries()].forEach(([cell, m]) => {
         cell.characters.push(m);
@@ -93,7 +95,7 @@ function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter,
 }
 
 function addPlayer(random: SeededRandom, board: TCell[][]) {
-    const player = createCharacter(true, random);
+    const player = createCharacter(true, random) as TPlayer;
     player.cell = board.flat().find(c => c.type === CellTypes.start)!;
     player.cell.characters.push(player);
     return player;
@@ -111,23 +113,26 @@ function addDecorations(random: SeededRandom, board: TCell[][], options: TOption
     return decorations;
 }
 
-function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], options: TOptions) {
-    const treasureKeeperCount = monsters.length + decorations.length;
-    let treasureCount = random.nextInt(options.treasures.min, Math.min(options.treasures.max, treasureKeeperCount));
-
-    let treasures: TItem[] = Array.from({length: treasureCount}).map(_ => createTreasure(random));
-    while (treasures.every(t => combatItems.has(t.type))) {
-        treasures  = treasures.map(_ => createTreasure(random));
-    }
-    const possibleBearer = [...monsters, ...decorations];
-    const treasureBearer = new Set<{ treasure?: TItem }>();
-    while (treasureBearer.size < treasureCount) {
-        treasureBearer.add(random.pickElement(possibleBearer));
-    }
-    const treasureBearerArr = [...treasureBearer];
-    treasures.forEach((t, i) => {
-        treasureBearerArr[i].treasure = t;
-    })
+function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], player: TPlayer,map:TCell[][], options: TOptions, maxDistanz: number) {
+    let treasures: TItem[] = []
+    do {
+        treasures = [];
+        monsters.forEach(m => {
+            m.treasure = undefined;
+            if (random.chance(options.treasures.propabilty.enemy)) {
+                m.treasure = createTreasure(random)
+                treasures.push(m.treasure);
+            }
+        });
+        decorations.forEach(d => {
+            d.treasure = undefined;
+            const difficulty = Math.min(1, getDistance(d.cell!, player.cell!, map) / maxDistanz) * options.treasures.propabilty.decoration;
+            if (random.chance(difficulty)) {
+                d.treasure = createTreasure(random)
+                treasures.push(d.treasure);
+            }
+        })
+    } while (treasures.every(t => combatItems.has(t.type)))
     return treasures;
 }
 
@@ -137,9 +142,9 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
         .sort((a, b) => b.ini - a.ini)
         .forEach(({action}) => {
             if (action.actor.current > 0 && action.defender!.current > 0) {
-                const isHit = random.chance(5/6);
-                let damage = random.nextInt(0, action.actor.level-1);
-                let defense=0;
+                const isHit = random.chance(5 / 6);
+                let damage = random.nextInt(0, action.actor.level - 1);
+                let defense = 0;
 
                 if (isPlayer(action.actor)) {
                     action.actor.inventory.forEach(i => {
@@ -175,7 +180,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                 } else {
                     transitions.push({type: GameEvent.blocked, cell: action.defender!.cell!})
                 }
-                transitions.push({type:GameEvent.attacked, cell: action.defender!.cell!, character: action.actor!})
+                transitions.push({type: GameEvent.attacked, cell: action.defender!.cell!, character: action.actor!})
             }
         })
     return transitions;
@@ -184,11 +189,11 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
 export function createGame(seed: string, options: TOptions = defaultOptions) {
     const random = new SeededRandom(seed);
     const board = createMap(options, random);
-    const distance = getDistance(board.flat().find(c => c.type === CellTypes.start)!,board.flat().find(c => c.type === CellTypes.gate)!,board);
+    const distance = getDistance(board.flat().find(c => c.type === CellTypes.start)!, board.flat().find(c => c.type === CellTypes.gate)!, board);
     const player = addPlayer(random, board);
-    const monsters = addMonsters(random, board, player, options,distance);
+    const monsters = addMonsters(random, board, player, options, distance);
     const decorations = addDecorations(random, board, options);
-    const treasures = addTreasures(random, monsters, decorations, options);
+    const treasures = addTreasures(random, monsters, decorations, player,board, options, distance);
     const state: TState = {
         step: 0,
         transitions: [],
@@ -236,6 +241,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
                 if (a.actor.current < a.actor.hitpoints) {
                     a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
                     a.actor.current = Math.min(a.actor.current + 2, a.actor.hitpoints);
+                    a.item!.cell = undefined;
                 }
             } else {
                 (a.actor as TPlayer).inventory.push(a.item!);
@@ -255,7 +261,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
 
             state.transitions.push({type: GameEvent.destroyed, cell: a.item!.cell!, character: a.actor})
             a.item!.cell = undefined;
-        })
+        });
 
 
         // resolve step & natural Healing
@@ -280,7 +286,7 @@ function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
     actions.forEach(({actor, targetCell}) => {
         let target = targetCell ?? null;
         if (!target) {
-            //monstermove!
+            //monster move!
             target = nextCellOnShortestPath(actor.cell!, player.cell!, map, (cell) => getDistance(actor.cell!, cell, map) < actor.vision);
         }
         if (target && actor.current > 0 && target.characters.filter(c => c.current > 0).length === 0) {
@@ -401,10 +407,13 @@ export const serializeGame = (game: TGame) => {
         decorations: game.decorations.map(serializeItem),
         board: game.board.map(row => row.map(serializeCell)),
         options: game.options,
-        state: {...game.state, transitions: game.state.transitions.map(({type, cell}) => ({type, cell: serializeCell(cell)})) },
+        state: {
+            ...game.state,
+            transitions: game.state.transitions.map(({type, cell}) => ({type, cell: serializeCell(cell)}))
+        },
     }
 }
 
-export const stringifyGame= (game: TGame) => {
+export const stringifyGame = (game: TGame) => {
     return JSON.stringify(serializeGame(game));
 }
