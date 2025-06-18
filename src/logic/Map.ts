@@ -1,7 +1,6 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 import type {TItem} from "./Item.ts";
 import type {TCharacter} from "./Character.ts";
-import type {TOptions} from "./GameGenerator.ts";
 
 export const CellTypes = {
     wall: 0,
@@ -26,11 +25,31 @@ function createCell(x: number, y: number) {
     return {x, y, type: CellTypes.wall, freeNeighbours: [], neighbours: [], items: [], characters: []} as TCell;
 }
 
-export function createMap(options: TOptions, random: SeededRandom) {
+function identifyDoors(map: TCell[][]) {
+    map.flat().filter(c => c.type === CellTypes.free).forEach(c => {
+        const isCorridor = (c: TCell) => c.freeNeighbours.length === 2
+        const isStraightCorridor = (c: TCell) => isCorridor(c) && (c.freeNeighbours[0].x == c.freeNeighbours[1].x || c.freeNeighbours[0].y == c.freeNeighbours[1].y);
+        const amountOfAdjacentCorridors = (c: TCell) => c.freeNeighbours.filter(isCorridor).length;
+        const isDoor = freeCellTypes.has(c.type) && (
+            isStraightCorridor(c) && amountOfAdjacentCorridors(c) <= 1
+            // || isCorridor(c) && amountOfAdjacentCorridors(c) === 1
+        );
+        if (isDoor) {
+            c.type = CellTypes.door;
+        }
+    })
+}
+
+function setNeighbours(map: TCell[][]) {
+    map.flat().forEach(c => {
+        c.neighbours = getNeighbours(c, map)
+        c.freeNeighbours = getFreeNeighbours(c, map)
+    });
+}
+
+function createOrganicMap(options: TOrganicDungeonMapOptions, random: SeededRandom) {
     let density = 0;
     let map: TCell[][] = [];
-    let distance = 0;
-    let pair: TCell[] = []
     do {
         map = Array.from({length: options.size.y},
             ((_, y) => Array.from({length: options.size.x},
@@ -84,40 +103,52 @@ export function createMap(options: TOptions, random: SeededRandom) {
         }
 
         density = map.flat().filter(cell => cell.type === CellTypes.free).length / map.flat().length * 100;
+    } while (density < options.density.min);
+    return map;
+}
 
-        const innerCells = map.flat().filter(cell => cell.type === CellTypes.free && getFreeNeighbours(cell, map).length == 4
-            && [[-1, -1], [-1, 1], [1, -1], [1, 1]].filter(([dx, dy]) => map[cell.y + dy]?.[cell.x + dx]?.type === CellTypes.free).length >= 3
-        );
-        for (let i = 0; i < innerCells.length; i++) {
-            for (let j = i + 1; j < innerCells.length; j++) {
-                const d = Math.sqrt(Math.pow(innerCells[i].x - innerCells[j].x, 2) + Math.pow(innerCells[i].y - innerCells[j].y, 2));
-                if (d > distance) {
-                    pair = [innerCells[i], innerCells[j]];
-                    distance = d;
-                }
+function setStartEnd(map: TMap) {
+    let pair: TCell[] = [];
+    let distance = 0;
+    const innerCells = map.board.flat().filter(cell => cell.type === CellTypes.free && cell.freeNeighbours.length == 4
+        && [[-1, -1], [-1, 1], [1, -1], [1, 1]].filter(([dx, dy]) => map.board[cell.y + dy]?.[cell.x + dx]?.type === CellTypes.free).length >= 3
+    );
+    for (let i = 0; i < innerCells.length; i++) {
+        for (let j = i + 1; j < innerCells.length; j++) {
+            const d = getDistance(innerCells[i], innerCells[j], map);
+            if (d > distance) {
+                pair = [innerCells[i], innerCells[j]];
+                distance = d;
             }
         }
-    } while (density < options.density.min && distance < options.minDistanz);
-    map.flat().forEach(c => {
-        c.neighbours = getNeighbours(c, map)
-        c.freeNeighbours = getFreeNeighbours(c, map)
-    });
-    map.flat().filter(c => c.type === CellTypes.free).forEach(c => {
-        const isCorridor = (c: TCell) => c.freeNeighbours.length === 2
-        const isStraightCorridor = (c: TCell) => isCorridor(c) && (c.freeNeighbours[0].x == c.freeNeighbours[1].x || c.freeNeighbours[0].y == c.freeNeighbours[1].y);
-        const amountOfAdjacentCorridors = (c: TCell) => c.freeNeighbours.filter(isCorridor).length;
-        const isDoor = freeCellTypes.has(c.type) && (
-            isStraightCorridor(c) && amountOfAdjacentCorridors(c) <= 1
-            // || isCorridor(c) && amountOfAdjacentCorridors(c) === 1
-        );
-        if (isDoor) {
-            c.type = CellTypes.door;
-        }
-    })
+    }
     pair[0].type = CellTypes.start;
     pair[1].type = CellTypes.gate;
-    computeAllDistances(map);
+    return distance;
+}
+
+export function createMap(options: TMapOptions, random: SeededRandom) {
+    const map = {
+        board: [],
+        distance: new Map()
+    } as TMap;
+    let distance: number;
+    do {
+        if (options.type === "room") {
+
+        }
+        if (options.type === "organic") {
+            map.board = createOrganicMap(options, random);
+        }
+        setNeighbours(map.board);
+        map.distance = computeAllDistances(map.board);
+        distance = setStartEnd(map);
+    } while (distance < options.minDistanz);
+    if (options.doorDetection) {
+        identifyDoors(map.board);
+    }
     return map;
+
 }
 
 
@@ -129,13 +160,10 @@ function getFreeNeighbours(cell: TCell, map: TCell[][]) {
     return getNeighbours(cell, map).filter(c => freeCellTypes.has(c.type));
 }
 
-const distanceMaps = new Map<TCell[][], Map<TCell, Map<TCell, number>>>;
-
 function computeAllDistances(map: TCell[][]) {
-    const distance = distanceMaps.get(map) ?? distanceMaps.set(map, new Map()).get(map)!;
+    const distance = new Map<TCell, Map<TCell, number>>();
 
     const cells = map.flat().filter(c => c.type !== CellTypes.wall);
-    distance.clear();
     // Initialisiere die Distanz-Map
     cells.forEach(cell => {
         distance.set(cell, new Map());
@@ -180,13 +208,14 @@ function computeAllDistances(map: TCell[][]) {
             }
         }
     }
+    return distance;
 }
 
-export function getDistance(cell1: TCell, cell2: TCell, map: TCell[][]) {
-    return distanceMaps.get(map)?.get(cell1)!.get(cell2)! ?? Infinity;
+export function getDistance(cell1: TCell, cell2: TCell, map: TMap): number {
+    return map.distance.get(cell1)?.get(cell2) ?? Infinity;
 }
 
-export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell | null {
+export function getShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell[] | null {
     // Menge der begehbaren Zellen für diese spezifische Situation
     const walkableCells = new Set(map.flat().filter(c => c.type !== CellTypes.wall && c.characters.filter(c => c.current > 0).length === 0 && cellFilter(c)));
     walkableCells.add(from); // Die Startzelle ist immer begehbar
@@ -194,7 +223,7 @@ export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], c
 
     // Wenn Start und Ziel identisch sind
     if (from === to) {
-        return from;
+        return [from];
     }
 
     // BFS für kürzesten Pfad
@@ -216,8 +245,7 @@ export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], c
                 path.unshift(temp);
             }
 
-            // Gib die nächste Zelle im Pfad zurück
-            return path.length > 1 ? path[1] : null;
+            return path;
         }
 
         // Prüfe alle Nachbarn
@@ -238,10 +266,67 @@ export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], c
     return null;
 }
 
+export function nextCellOnShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell | null {
+    const path = getShortestPath(from, to, map, cellFilter);
+
+    if (!path || path.length <= 1) {
+        return null;
+    }
+
+    // Gib die nächste Zelle im Pfad zurück (Index 1, da Index 0 die Startzelle ist)
+    return path[1];
+}
+
 export const serializeCell = (cell: TCell) => {
     return {
         x: cell.x,
         y: cell.y,
         type: cell.type
     }
+}
+
+export const organicDungeonMapDefaultOptions = {
+    type: "organic",
+    size: {
+        x: 32 as number,
+        y: 32 as number
+    },
+    density: {
+        seed: 60 as number,
+        min: 40 as number
+    },
+    maxDeadEnds: 0 as number,
+    minDistanz: 10 as number,
+    doorDetection: false as boolean,
+} as const;
+export type TOrganicDungeonMapOptions = typeof organicDungeonMapDefaultOptions;
+export const roomDungeonMapDefaultOptions = {
+    type: "room",
+    size: {
+        x: 32 as number,
+        y: 32 as number
+    },
+    room: {
+        x: {
+            min: 3 as number,
+            max: 9 as number
+        },
+        y: {
+            min: 3 as number,
+            max: 5 as number
+        }
+    },
+    density: {
+        min: 20 as number
+    },
+    doorDetection: true as boolean,
+    minDistanz: 10 as number,
+} as const;
+export type TRoomDungeonMapOptions = typeof roomDungeonMapDefaultOptions;
+
+export const defaultMapOptions = organicDungeonMapDefaultOptions;
+export type TMapOptions = TOrganicDungeonMapOptions | TRoomDungeonMapOptions;
+export type TMap = {
+    board: TCell[][],
+    distance: Map<TCell, Map<TCell, number>>
 }

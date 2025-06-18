@@ -1,30 +1,18 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
-import {CellTypes, createMap, getDistance, nextCellOnShortestPath, serializeCell, type TCell} from "./Map.ts";
+import {
+    CellTypes,
+    createMap,
+    defaultMapOptions,
+    getDistance,
+    nextCellOnShortestPath,
+    serializeCell,
+    type TCell, type TMap
+} from "./Map.ts";
 import {createCharacter, isPlayer, serializeCharacter, type TCharacter, type TPlayer} from "./Character.ts";
 import {combatItems, createDecoration, createTreasure, serializeItem, type TItem, TreasureTypes} from "./Item.ts";
 
 export const defaultOptions = {
-    size: {
-        x: 32,
-        y: 32
-    },
-    room:{
-        x:{
-            min: 3,
-            max: 9
-        }
-        ,
-        y:{
-            min: 3,
-            max: 5
-        }
-    },
-    density: {
-        seed: 60,
-        min: 40
-    },
-    maxDeadEnds: 0,
-    minDistanz: 10,
+    map: defaultMapOptions,
     naturalHealing: {
         steps: 100,
         amount: 2
@@ -61,15 +49,15 @@ export type TGame = {
     treasures: TItem[],
     decorations: TItem[],
     random: SeededRandom,
-    board: TCell[][],
+    map: TMap,
     options: TOptions,
     mover: (action: TInputActions) => TState,
     state: TState
 }
 
 
-function getEmptyCells(count: number, map: TCell[][], random: SeededRandom) {
-    const freeCells = map.flat().filter(c => c.type === CellTypes.free && c.characters.length === 0 && c.items.length === 0);
+function getEmptyCells(count: number, map: TMap, random: SeededRandom) {
+    const freeCells = map.board.flat().filter(c => c.type === CellTypes.free && c.characters.length === 0 && c.items.length === 0);
     const cells = new Set<TCell>();
     while (cells.size < count) {
         cells.add(random.pickElement(freeCells));
@@ -77,15 +65,15 @@ function getEmptyCells(count: number, map: TCell[][], random: SeededRandom) {
     return [...cells];
 }
 
-function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter, options: TOptions, startGoalDistance: number) {
+function addMonsters(random: SeededRandom, map: TMap, player: TCharacter, options: TOptions, startGoalDistance: number) {
     const monsterCount = random.nextInt(options.enemies.min, options.enemies.max);
     const cellMap = new Map<TCell, TCharacter>();
 
     let monsters: TCharacter[] = [];
-    const monsterCells = getEmptyCells(monsterCount, board, random);
+    const monsterCells = getEmptyCells(monsterCount, map, random);
     cellMap.clear();
     monsterCells.forEach(c => {
-        const distance = getDistance(c, player.cell!, board);
+        const distance = getDistance(c, player.cell!, map);
         const difficulty = Math.min(1, distance / startGoalDistance * 0.75);
         cellMap.set(c, createCharacter(false, random, difficulty));
     });
@@ -97,17 +85,17 @@ function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter,
     return monsters;
 }
 
-function addPlayer(random: SeededRandom, board: TCell[][]) {
+function addPlayer(random: SeededRandom, map: TMap) {
     const player = createCharacter(true, random) as TPlayer;
-    player.cell = board.flat().find(c => c.type === CellTypes.start)!;
+    player.cell = map.board.flat().find(c => c.type === CellTypes.start)!;
     player.cell.characters.push(player);
     return player;
 }
 
-function addDecorations(random: SeededRandom, board: TCell[][], options: TOptions) {
+function addDecorations(random: SeededRandom, map: TMap, options: TOptions) {
     const decorationCount = random.nextInt(options.decorations.min, options.decorations.max);
     const decorations: TItem[] = Array.from({length: decorationCount}).map(_ => createDecoration(random));
-    const decoCells = getEmptyCells(decorationCount, board, random);
+    const decoCells = getEmptyCells(decorationCount, map, random);
     decorations.forEach((d, i) => {
         const cell = decoCells[i];
         cell.items.push(d);
@@ -116,7 +104,7 @@ function addDecorations(random: SeededRandom, board: TCell[][], options: TOption
     return decorations;
 }
 
-function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], player: TPlayer, map: TCell[][], options: TOptions, maxDistanz: number) {
+function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], player: TPlayer, map: TMap, options: TOptions, maxDistanz: number) {
     let treasures: TItem[] = []
     do {
         treasures = [];
@@ -191,12 +179,12 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
 
 export function createGame(seed: string, options: TOptions = defaultOptions) {
     const random = new SeededRandom(seed);
-    const board = createMap(options, random);
-    const distance = getDistance(board.flat().find(c => c.type === CellTypes.start)!, board.flat().find(c => c.type === CellTypes.gate)!, board);
-    const player = addPlayer(random, board);
-    const monsters = addMonsters(random, board, player, options, distance);
-    const decorations = addDecorations(random, board, options);
-    const treasures = addTreasures(random, monsters, decorations, player, board, options, distance);
+    const map = createMap(options.map, random);
+    const distance = getDistance(map.board.flat().find(c => c.type === CellTypes.start)!, map.board.flat().find(c => c.type === CellTypes.gate)!, map);
+    const player = addPlayer(random, map);
+    const monsters = addMonsters(random, map, player, options, distance);
+    const decorations = addDecorations(random, map, options);
+    const treasures = addTreasures(random, monsters, decorations, player, map, options, distance);
     const state: TState = {
         step: 0,
         transitions: [],
@@ -206,7 +194,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         state.transitions = [];
         const actions = [] as TAction[];
         //add player actions
-        actions.push(...getPlayerActions(input, player, board));
+        actions.push(...getPlayerActions(input, player, map));
         if (!actions.some(a => a.type === GameAction.increaseStepCounter)) {
             return state;
         }
@@ -215,7 +203,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         if (move >= 0) {
             const moveAction = actions[move];
             actions.splice(move, 1);
-            handleMove([moveAction], player, board);
+            handleMove([moveAction], player, map);
         }
         //player win
         if (player.cell?.type === CellTypes.gate) {
@@ -224,11 +212,11 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         }
         //add monster actions
         monsters.filter(m => m.current > 0).forEach(m => {
-            actions.push(...getMonsterActions(m, player, board, random));
+            actions.push(...getMonsterActions(m, player, map, random));
         })
         //monster move
         const grouped = Map.groupBy(actions, a => a.type);
-        handleMove(grouped.get(GameAction.move) ?? [], player, board);
+        handleMove(grouped.get(GameAction.move) ?? [], player, map);
         //resolve combat actions
         const combatActions = grouped.get(GameAction.fight) ?? [];
         state.transitions.push(...handleFight(combatActions, random));
@@ -281,16 +269,16 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
         }
         return state;
     }
-    return {seed, player, monsters, treasures, decorations, board, options, random, mover, state} as TGame;
+    return {seed, player, monsters, treasures, decorations, map, options, random, mover, state} as TGame;
 }
 
-function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
+function handleMove(actions: TAction[], player: TCharacter, map: TMap) {
     actions.sort((a, b) => (a.actor == player) ? -1 : ((b.actor == player) ? 1 : (b.actor.exp - a.actor.exp)));
     actions.forEach(({actor, targetCell}) => {
         let target = targetCell ?? null;
         if (!target) {
             //monster move!
-            target = nextCellOnShortestPath(actor.cell!, player.cell!, map, (cell) => getDistance(actor.cell!, cell, map) < actor.vision);
+            target = nextCellOnShortestPath(actor.cell!, player.cell!, map.board, (cell) => getDistance(actor.cell!, cell, map) < actor.vision);
         }
         if (target && actor.current > 0 && target.characters.filter(c => c.current > 0).length === 0) {
             target.characters.push(actor);
@@ -301,8 +289,9 @@ function handleMove(actions: TAction[], player: TCharacter, map: TCell[][]) {
 }
 
 
-function getPlayerActions(input: TInputActions, player: TCharacter, board: TCell[][]) {
+function getPlayerActions(input: TInputActions, player: TCharacter, map: TMap) {
     const actions: TAction[] = []
+
     if (input == InputActions.idle) {
         actions.push({type: GameAction.increaseStepCounter, actor: player});
     } else {
@@ -310,16 +299,16 @@ function getPlayerActions(input: TInputActions, player: TCharacter, board: TCell
         let targetCell = playerCell;
         switch (input) {
             case InputActions.moveUp:
-                targetCell = board[playerCell.y - 1][playerCell.x];
+                targetCell = map.board[playerCell.y - 1][playerCell.x];
                 break;
             case InputActions.moveDown:
-                targetCell = board[playerCell.y + 1][playerCell.x];
+                targetCell = map.board[playerCell.y + 1][playerCell.x];
                 break;
             case InputActions.moveLeft:
-                targetCell = board[playerCell.y][playerCell.x - 1];
+                targetCell = map.board[playerCell.y][playerCell.x - 1];
                 break;
             case InputActions.moveRight:
-                targetCell = board[playerCell.y][playerCell.x + 1];
+                targetCell = map.board[playerCell.y][playerCell.x + 1];
                 break;
         }
         if (targetCell.type !== CellTypes.wall) {
@@ -353,9 +342,9 @@ function getPlayerActions(input: TInputActions, player: TCharacter, board: TCell
     return actions;
 }
 
-function getMonsterActions(m: TCharacter, player: TCharacter, board: TCell[][], random: SeededRandom) {
+function getMonsterActions(m: TCharacter, player: TCharacter, map: TMap, random: SeededRandom) {
     const mActions = [];
-    const distance = getDistance(m.cell!, player.cell!, board);
+    const distance = getDistance(m.cell!, player.cell!, map);
     if (distance == 1) {
         mActions.push({type: GameAction.fight, actor: m, defender: player});
     } else if (distance < m.vision) {
@@ -408,7 +397,7 @@ export const serializeGame = (game: TGame) => {
         monsters: game.monsters.map(serializeCharacter),
         treasures: game.treasures.map(serializeItem),
         decorations: game.decorations.map(serializeItem),
-        board: game.board.map(row => row.map(serializeCell)),
+        board: game.map.board.map(row => row.map(serializeCell)),
         options: game.options,
         state: {
             ...game.state,

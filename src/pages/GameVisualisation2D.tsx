@@ -15,7 +15,7 @@ export function GameVisualisation2D({game, handleInput, state}: {
     return (
         <>
             <Players player={game.player!}/>
-            <Board board={game.board} player={game.player!} full={full} events={state.transitions} step={state.step}/>
+            <Board board={game.map.board} player={game.player!} full={full} events={state.transitions} step={state.step}/>
             <Inventory player={game.player!}/>
             <InputButtons onInput={handleInput!}/>
         </>

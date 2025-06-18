@@ -1,5 +1,5 @@
 import './App.css'
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {createGame, type TGame, type TInputActions, type TState} from "./logic/GameGenerator.ts";
 import {GameVisualisation2D} from "./pages/GameVisualisation2D.tsx";
 import {Intro} from "./pages/Intro.tsx";
@@ -19,10 +19,10 @@ function App() {
         setState(game?.state ? {...game.state} : null);
     }, [game])
 
-    const handleInput = (action: TInputActions) => {
+    const handleInput = useCallback((action: TInputActions) => {
         const newState = game!.mover(action);
         setState({...newState});
-    }
+    }, [game])
 
     return (<>
         <main>
