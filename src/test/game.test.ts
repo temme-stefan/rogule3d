@@ -1,26 +1,32 @@
 import {describe, test, expect} from "vitest";
 import {
-    createGame,
+    createGame, defaultOptions,
     InputActions,
     stringifyGame,
     type TGame,
     type TInputActions,
     type TState
 } from '../logic/GameGenerator.js';
+import {organicDungeonMapDefaultOptions, roomDungeonMapDefaultOptions} from "../logic/Map.ts";
 
 describe('Game', () => {
     const seed = Date.now().toString();
-    const a = createGame(seed);
-    const b = createGame(seed);
-    const c = createGame(seed + "_");
-    test('existence', () => expect(createGame).toBeTypeOf('function'))
-    test('create', () => {
+    test('existence', () => expect(createGame).toBeTypeOf('function'));
+    [organicDungeonMapDefaultOptions(),roomDungeonMapDefaultOptions()].forEach(mapOptions=> {
+        const options = defaultOptions();
+        options.map = mapOptions;
 
-        return expect(stringifyGame(a)).to.equal(stringifyGame(b));
-    });
-    test('create unequal', () => {
-        return expect(stringifyGame(a)).not.to.equal(stringifyGame(c));
-    });
+        const a = createGame(seed,options);
+        const b = createGame(seed,options);
+        const c = createGame(seed + "_",options);
+        test(`create (${options.map.type})`, () => {
+
+            return expect(stringifyGame(a)).to.equal(stringifyGame(b));
+        });
+        test(`create unequal (${options.map.type})`, () => {
+            return expect(stringifyGame(a)).not.to.equal(stringifyGame(c));
+        });
+    })
 });
 
 describe('Gameplay', () => {
