@@ -1,7 +1,7 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 import {CellTypes, createMap, getDistance, nextCellOnShortestPath, serializeCell, type TCell} from "./Map.ts";
 import {createCharacter, isPlayer, serializeCharacter, type TCharacter, type TPlayer} from "./Character.ts";
-import {combatItems, createDecoration, createTreasure, serializeItem, type TItem, TreasureTypes} from "./TItem.ts";
+import {combatItems, createDecoration, createTreasure, serializeItem, type TItem, TreasureTypes} from "./Item.ts";
 
 export const defaultOptions = {
     size: {

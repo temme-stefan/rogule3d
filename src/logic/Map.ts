@@ -1,5 +1,5 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
-import type {TItem} from "./TItem.ts";
+import type {TItem} from "./Item.ts";
 import type {TCharacter} from "./Character.ts";
 import type {TOptions} from "./GameGenerator.ts";
 

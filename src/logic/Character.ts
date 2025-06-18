@@ -1,4 +1,4 @@
-import {serializeItem, type TItem} from "./TItem.ts";
+import {serializeItem, type TItem} from "./Item.ts";
 import {serializeCell, type TCell} from "./Map.ts";
 import type {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 

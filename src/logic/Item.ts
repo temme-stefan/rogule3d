@@ -40,7 +40,17 @@ export function createDecoration(random: SeededRandom) {
 }
 
 export function createTreasure(random: SeededRandom) {
-    return getTreasure(random.pickElement(treasureTypes))
+    const distribution = [
+        [TreasureTypes.chestnut, 24],
+        [TreasureTypes.mushroom, 12],
+        [TreasureTypes.gem_stone, 3],
+        [TreasureTypes.health, 12],
+        [TreasureTypes.shield, 8],
+        [TreasureTypes.dagger, 8],
+        [TreasureTypes.axe, 6],
+
+    ] as [TItemTypes, number][];
+    return getTreasure(random.pickWeightedElement(distribution))
 }
 
 function getTreasure(type: TItemTypes): TItem {

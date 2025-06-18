@@ -1,6 +1,6 @@
 import type {TPlayer} from "../logic/Character.ts";
 import './Inventory.css'
-import {combatItems} from "../logic/TItem.ts";
+import {combatItems} from "../logic/Item.ts";
 
 export function Inventory({player, hideCombatGear = false, empties = 0}: {
     player: TPlayer,
