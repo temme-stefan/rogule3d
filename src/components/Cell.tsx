@@ -2,6 +2,12 @@ import {CellTypes, type TCell} from "../logic/Map.ts";
 import "./Cell.css"
 import {GameEvent, InputActions, type TGameEvent, type TInputActions} from "../logic/GameGenerator.ts";
 
+
+const checkDiagonalIsFree = (cell:TCell) => {
+    const allCells = [...new Set(cell.neighbours.map(n=>n.freeNeighbours).flat())];
+    const {x,y}=cell;
+    return [[-1,-1],[1,-1],[-1,1],[1,1]].some(([dx,dy])=>allCells.some(c=>c.x===x+dx&&c.y===y+dy))
+}
 export function Cell({cell, className = "", cellEvent, characterEvent}: {
     cell: TCell | undefined,
     className?: string,
@@ -18,7 +24,7 @@ export function Cell({cell, className = "", cellEvent, characterEvent}: {
             case CellTypes.door:
                 return "door";
             case CellTypes.wall:
-                const show = (cell?.freeNeighbours.length > 0 || cell?.neighbours.filter(n => n.freeNeighbours.length > 0).length > 1);
+                let show = cell?.freeNeighbours.length > 0 || checkDiagonalIsFree(cell!);
                 return show ? "wall" : "";
             default:
                 return "";

@@ -2,7 +2,7 @@
  * Seeded Random Number Generator basierend auf einem angepassten Mulberry32 Algorithmus
  */
 export class SeededRandom {
-    private state: number;
+    state: number;
 
     /**
      * Konstruktor für den SeededRandom Generator

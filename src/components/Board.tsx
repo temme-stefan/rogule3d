@@ -1,4 +1,4 @@
-import type {TCell} from "../logic/Map.ts";
+import type {TCell, TMap} from "../logic/Map.ts";
 import {Cell} from "./Cell.tsx";
 import './Board.css'
 import type {TPlayer} from "../logic/Character.ts";
@@ -11,9 +11,6 @@ export function Board({board, player, full = false, events, step}: {
     events: TState["transitions"],
     step: TState["step"]
 }) {
-    const {x, y} = player.cell!
-    const vision = player.vision;
-    const indices = Array.from({length: 2 * vision - 1}).map((_, i) => -vision + 1 + i);
     const eventMap = new Map(events.map(ev => [ev.cell, ev.type]));
     const characterEventMap = new Map(events.filter(ev => ev.character).map(ev => {
         const from = ev.character!.cell!;
@@ -27,35 +24,82 @@ export function Board({board, player, full = false, events, step}: {
         return [from, direction]
     }));
     console.log(characterEventMap)
-    const distanceClass = (x: number, y: number) => {
-        const d = Math.abs(x) + Math.abs(y);
+
+    return (
+        <section className={"board"}>
+            {!full ?
+                <FogOfWarBoard
+                    board={board}
+                    player={player}
+                    eventMap={eventMap}
+                    characterEventMap={characterEventMap}
+                    step={step}
+                /> :
+                <FullBoard
+                    board={board}
+                    eventMap={eventMap}
+                    characterEventMap={characterEventMap}
+                    step={step}
+                />
+            }
+        </section>
+    )
+}
+
+function FogOfWarBoard({board, player, eventMap, characterEventMap, step}: {
+    board: TCell[][],
+    player: TPlayer,
+    eventMap: Map<TCell, TState["transitions"][0]["type"]>,
+    characterEventMap: Map<TCell, TInputActions>,
+    step: number
+}) {
+    const {x, y} = player.cell!;
+    const vision = player.vision;
+    const indices = Array.from({length: 2 * vision - 1}).map((_, i) => -vision + 1 + i);
+
+    const distanceClass = (dx: number, dy: number) => {
+        const d = Math.abs(dx) + Math.abs(dy);
         if (d > vision) return "far";
         if (d > vision * 0.8) return "medium";
         return "close";
     }
-    return (
-        <section className={"board"}>
 
-            {!full ? indices.map(dy => <div key={dy} className={"row"}>
+    return (
+        <>
+            {indices.map(dy =>
+                <div key={dy} className={"row"}>
                     {indices.map(dx => {
                         const cell = board[dy + y]?.[dx + x]
-                       return <Cell key={`${dx + x}|${dy + y}~${step}`}
-                              cell={cell}
-                              className={distanceClass(dx, dy)}
-                              cellEvent={eventMap.get(cell)}
-                              characterEvent={characterEventMap.get(cell)}
+                        return <Cell key={`${dx + x}|${dy + y}~${step}`}
+                                     cell={cell}
+                                     className={distanceClass(dx, dy)}
+                                     cellEvent={eventMap.get(cell)}
+                                     characterEvent={characterEventMap.get(cell)}
                         />
                     })}
-                </div>)
-                : board.map((row, y) => (
-                    <div key={y} className={"row"}>
-                        {row.map((cell, x) => (
-                            <Cell cell={cell} key={`${x}~${y}~${step}`}
-                                  cellEvent={eventMap.get(cell)}
-                                  characterEvent={characterEventMap.get(cell)}/>
-                        ))}
-                    </div>
-                ))}
-        </section>
+                </div>
+            )}
+        </>
+    )
+}
+
+function FullBoard({board, eventMap, characterEventMap, step}: {
+    board: TMap["board"],
+    eventMap: Map<TCell, TState["transitions"][0]["type"]>,
+    characterEventMap: Map<TCell, TInputActions>,
+    step: number
+}) {
+    return (
+        <>
+            {board.map((row, y) => (
+                <div key={y} className={"row"}>
+                    {row.map((cell, x) => (
+                        <Cell cell={cell} key={`${x}~${y}~${step}`}
+                              cellEvent={eventMap.get(cell)}
+                              characterEvent={characterEventMap.get(cell)}/>
+                    ))}
+                </div>
+            ))}
+        </>
     )
 }

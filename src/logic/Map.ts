@@ -1,6 +1,8 @@
 import {SeededRandom} from "./PseudoRandomNumberGenerator.ts";
 import type {TItem} from "./Item.ts";
 import type {TCharacter} from "./Character.ts";
+import Digger from "rot-js/lib/map/digger";
+import RNG from "rot-js/lib/rng"
 
 export const CellTypes = {
     wall: 0,
@@ -10,6 +12,7 @@ export const CellTypes = {
     door: 4,
 } as const;
 export type TCellType = typeof CellTypes[keyof typeof CellTypes]
+export const wallCellTypes: Set<TCellType> = new Set([CellTypes.wall]);
 export const freeCellTypes: Set<TCellType> = new Set([CellTypes.free, CellTypes.door, CellTypes.gate, CellTypes.start]);
 export type TCell = {
     x: number,
@@ -47,15 +50,27 @@ function setNeighbours(map: TCell[][]) {
     });
 }
 
+function createEmptyMap(options: TMapOptions): TCell[][] {
+    return Array.from({length: options.size.y},
+        ((_, y) => Array.from({length: options.size.x},
+            ((_, x) => createCell(x, y))
+        ))
+    );
+}
+
+function removeDeadEnds(map: TCell[][], options: TMapOptions) {
+    let deadEnds = map.flat().filter(c => c.type === CellTypes.free && getFreeNeighbours(c, map).length === 1);
+    while (deadEnds.length > options.maxDeadEnds) {
+        deadEnds.forEach(cell => map[cell.y][cell.x].type = CellTypes.wall)
+        deadEnds = map.flat().filter(c => c.type === CellTypes.free && getFreeNeighbours(c, map).length === 1);
+    }
+}
+
 function createOrganicMap(options: TOrganicDungeonMapOptions, random: SeededRandom) {
     let density = 0;
     let map: TCell[][] = [];
     do {
-        map = Array.from({length: options.size.y},
-            ((_, y) => Array.from({length: options.size.x},
-                ((_, x) => createCell(x, y))
-            ))
-        );
+        map = createEmptyMap(options);
         for (let y = 0; y < options.size.y; y++) {
             for (let x = 0; x < options.size.x; x++) {
                 if (y === 0 || y === options.size.y - 1 || x === 0 || x === options.size.x - 1) {
@@ -96,11 +111,7 @@ function createOrganicMap(options: TOrganicDungeonMapOptions, random: SeededRand
             }
 
         }
-        let deadEnds = map.flat().filter(c => c.type === CellTypes.free && getFreeNeighbours(c, map).length === 1);
-        while (deadEnds.length > options.maxDeadEnds) {
-            deadEnds.forEach(cell => map[cell.y][cell.x].type = CellTypes.wall)
-            deadEnds = map.flat().filter(c => c.type === CellTypes.free && getFreeNeighbours(c, map).length === 1);
-        }
+        removeDeadEnds(map, options);
 
         density = map.flat().filter(cell => cell.type === CellTypes.free).length / map.flat().length * 100;
     } while (density < options.density.min);
@@ -127,6 +138,32 @@ function setStartEnd(map: TMap) {
     return distance;
 }
 
+
+function createRoomMap(options: TRoomDungeonMapOptions, random: SeededRandom) {
+    RNG.setSeed(random.state);
+    const digger = new Digger(options.size.x, options.size.y, {
+        roomWidth: [options.room.x.min, options.room.x.max],
+        roomHeight: [options.room.y.min, options.room.y.max],
+        corridorLength: [options.corridor.min, options.corridor.max],
+        dugPercentage: options.density.min
+    });
+    const map = createEmptyMap(options);
+    digger.create((x, y, value) => {
+        if (value == 0) {
+            map[y][x].type = CellTypes.free;
+        }
+    })
+    removeDeadEnds(map, options)
+    digger.getRooms().forEach(room => {
+        room.getDoors((x, y) => {
+            if (map[y][x].type === CellTypes.free) {
+                map[y][x].type = CellTypes.door;
+            }
+        });
+    });
+    return map;
+}
+
 export function createMap(options: TMapOptions, random: SeededRandom) {
     const map = {
         board: [],
@@ -134,10 +171,10 @@ export function createMap(options: TMapOptions, random: SeededRandom) {
     } as TMap;
     let distance: number;
     do {
-        if (options.type === "room") {
-
+        if (isRoomDungeonMapOptions(options)) {
+            map.board = createRoomMap(options, random)
         }
-        if (options.type === "organic") {
+        if (isOrganicDungeonMapOptions(options)) {
             map.board = createOrganicMap(options, random);
         }
         setNeighbours(map.board);
@@ -163,7 +200,7 @@ function getFreeNeighbours(cell: TCell, map: TCell[][]) {
 function computeAllDistances(map: TCell[][]) {
     const distance = new Map<TCell, Map<TCell, number>>();
 
-    const cells = map.flat().filter(c => c.type !== CellTypes.wall);
+    const cells = map.flat().filter(c => !wallCellTypes.has(c.type));
     // Initialisiere die Distanz-Map
     cells.forEach(cell => {
         distance.set(cell, new Map());
@@ -217,7 +254,7 @@ export function getDistance(cell1: TCell, cell2: TCell, map: TMap): number {
 
 export function getShortestPath(from: TCell, to: TCell, map: TCell[][], cellFilter: (cell: TCell) => boolean): TCell[] | null {
     // Menge der begehbaren Zellen für diese spezifische Situation
-    const walkableCells = new Set(map.flat().filter(c => c.type !== CellTypes.wall && c.characters.filter(c => c.current > 0).length === 0 && cellFilter(c)));
+    const walkableCells = new Set(map.flat().filter(c => !wallCellTypes.has(c.type) && c.characters.filter(c => c.current > 0).length === 0 && cellFilter(c)));
     walkableCells.add(from); // Die Startzelle ist immer begehbar
     walkableCells.add(to);   // Die Zielzelle ist immer begehbar
 
@@ -285,7 +322,7 @@ export const serializeCell = (cell: TCell) => {
     }
 }
 
-export const organicDungeonMapDefaultOptions = {
+export const organicDungeonMapDefaultOptions = () => ({
     type: "organic",
     size: {
         x: 32 as number,
@@ -298,9 +335,10 @@ export const organicDungeonMapDefaultOptions = {
     maxDeadEnds: 0 as number,
     minDistanz: 10 as number,
     doorDetection: false as boolean,
-} as const;
-export type TOrganicDungeonMapOptions = typeof organicDungeonMapDefaultOptions;
-export const roomDungeonMapDefaultOptions = {
+});
+export type TOrganicDungeonMapOptions = ReturnType<typeof organicDungeonMapDefaultOptions>;
+const isOrganicDungeonMapOptions = (options: TMapOptions): options is TOrganicDungeonMapOptions => options.type === "organic";
+export const roomDungeonMapDefaultOptions = () => ({
     type: "room",
     size: {
         x: 32 as number,
@@ -316,13 +354,19 @@ export const roomDungeonMapDefaultOptions = {
             max: 5 as number
         }
     },
+    corridor: {
+        min: 1 as number,
+        max: 5 as number,
+    },
     density: {
         min: 20 as number
     },
-    doorDetection: true as boolean,
+    maxDeadEnds: 2 as number,
+    doorDetection: false as boolean,
     minDistanz: 10 as number,
-} as const;
-export type TRoomDungeonMapOptions = typeof roomDungeonMapDefaultOptions;
+});
+export type TRoomDungeonMapOptions = ReturnType<typeof roomDungeonMapDefaultOptions>;
+const isRoomDungeonMapOptions = (options: TMapOptions): options is TRoomDungeonMapOptions => options.type === "room";
 
 export const defaultMapOptions = organicDungeonMapDefaultOptions;
 export type TMapOptions = TOrganicDungeonMapOptions | TRoomDungeonMapOptions;

@@ -6,13 +6,13 @@ import {
     getDistance,
     nextCellOnShortestPath,
     serializeCell,
-    type TCell, type TMap
+    type TCell, type TMap, type TMapOptions, wallCellTypes
 } from "./Map.ts";
 import {createCharacter, isPlayer, serializeCharacter, type TCharacter, type TPlayer} from "./Character.ts";
 import {combatItems, createDecoration, createTreasure, serializeItem, type TItem, TreasureTypes} from "./Item.ts";
 
-export const defaultOptions = {
-    map: defaultMapOptions,
+export const defaultOptions = ()=>( {
+    map: defaultMapOptions() as TMapOptions,
     naturalHealing: {
         steps: 100,
         amount: 2
@@ -26,15 +26,15 @@ export const defaultOptions = {
         max: 15
     },
     treasures: {
-        propabilty: {
+        probabilty: {
             enemy: 0.5,
             decoration: 0.9
         }
     },
 
-} as const
+});
 
-export type TOptions = typeof defaultOptions;
+export type TOptions = ReturnType<typeof defaultOptions>;
 
 export type TState = {
     step: number,
@@ -110,14 +110,14 @@ function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations:
         treasures = [];
         monsters.forEach(m => {
             m.treasure = undefined;
-            if (random.chance(options.treasures.propabilty.enemy)) {
+            if (random.chance(options.treasures.probabilty.enemy)) {
                 m.treasure = createTreasure(random)
                 treasures.push(m.treasure);
             }
         });
         decorations.forEach(d => {
             d.treasure = undefined;
-            const difficulty = Math.min(1, getDistance(d.cell!, player.cell!, map) / maxDistanz) * options.treasures.propabilty.decoration;
+            const difficulty = Math.min(1, getDistance(d.cell!, player.cell!, map) / maxDistanz) * options.treasures.probabilty.decoration;
             if (random.chance(difficulty)) {
                 d.treasure = createTreasure(random)
                 treasures.push(d.treasure);
@@ -177,7 +177,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
     return transitions;
 }
 
-export function createGame(seed: string, options: TOptions = defaultOptions) {
+export function createGame(seed: string, options: TOptions = defaultOptions()) {
     const random = new SeededRandom(seed);
     const map = createMap(options.map, random);
     const distance = getDistance(map.board.flat().find(c => c.type === CellTypes.start)!, map.board.flat().find(c => c.type === CellTypes.gate)!, map);
@@ -311,7 +311,7 @@ function getPlayerActions(input: TInputActions, player: TCharacter, map: TMap) {
                 targetCell = map.board[playerCell.y][playerCell.x + 1];
                 break;
         }
-        if (targetCell.type !== CellTypes.wall) {
+        if (!wallCellTypes.has(targetCell.type)) {
             actions.push({type: GameAction.increaseStepCounter, actor: player});
             let move = true;
             if (targetCell.characters.filter(c => c.current > 0).length > 0) {
