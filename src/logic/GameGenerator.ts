@@ -5,8 +5,19 @@ import {combatItems, createDecoration, createTreasure, serializeItem, type TItem
 
 export const defaultOptions = {
     size: {
-        x: 25,
-        y: 25
+        x: 32,
+        y: 32
+    },
+    room:{
+        x:{
+            min: 3,
+            max: 9
+        }
+        ,
+        y:{
+            min: 3,
+            max: 5
+        }
     },
     density: {
         seed: 60,
@@ -21,10 +32,6 @@ export const defaultOptions = {
     enemies: {
         min: 5,
         max: 5,
-        exp: {
-            min: 5,
-            max: Number.MAX_SAFE_INTEGER,
-        },
     },
     decorations: {
         min: 15,
@@ -74,18 +81,14 @@ function addMonsters(random: SeededRandom, board: TCell[][], player: TCharacter,
     const monsterCount = random.nextInt(options.enemies.min, options.enemies.max);
     const cellMap = new Map<TCell, TCharacter>();
 
-    let monsterXpSum = 0;
     let monsters: TCharacter[] = [];
-    while (monsterXpSum > options.enemies.exp.max || monsterXpSum < options.enemies.exp.min) {
-        const monsterCells = getEmptyCells(monsterCount, board, random);
-        cellMap.clear();
-        monsterCells.forEach(c => {
-            const distance = getDistance(c, player.cell!, board);
-            const difficulty = Math.min(1, distance / startGoalDistance * 0.75);
-            cellMap.set(c, createCharacter(false, random, difficulty));
-        });
-        monsterXpSum = [...cellMap.values()].reduce((a, c) => a + c.exp, 0);
-    }
+    const monsterCells = getEmptyCells(monsterCount, board, random);
+    cellMap.clear();
+    monsterCells.forEach(c => {
+        const distance = getDistance(c, player.cell!, board);
+        const difficulty = Math.min(1, distance / startGoalDistance * 0.75);
+        cellMap.set(c, createCharacter(false, random, difficulty));
+    });
     [...cellMap.entries()].forEach(([cell, m]) => {
         cell.characters.push(m);
         m.cell = cell;
@@ -113,7 +116,7 @@ function addDecorations(random: SeededRandom, board: TCell[][], options: TOption
     return decorations;
 }
 
-function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], player: TPlayer,map:TCell[][], options: TOptions, maxDistanz: number) {
+function addTreasures(random: SeededRandom, monsters: TCharacter[], decorations: TItem[], player: TPlayer, map: TCell[][], options: TOptions, maxDistanz: number) {
     let treasures: TItem[] = []
     do {
         treasures = [];
@@ -193,7 +196,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
     const player = addPlayer(random, board);
     const monsters = addMonsters(random, board, player, options, distance);
     const decorations = addDecorations(random, board, options);
-    const treasures = addTreasures(random, monsters, decorations, player,board, options, distance);
+    const treasures = addTreasures(random, monsters, decorations, player, board, options, distance);
     const state: TState = {
         step: 0,
         transitions: [],

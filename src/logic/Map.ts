@@ -16,8 +16,8 @@ export type TCell = {
     x: number,
     y: number,
     type: TCellType,
-    freeNeighbours: TCell[]
     neighbours: TCell[],
+    freeNeighbours: TCell[]
     items: TItem[],
     characters: TCharacter[]
 }
@@ -101,16 +101,19 @@ export function createMap(options: TOptions, random: SeededRandom) {
     map.flat().forEach(c => {
         c.neighbours = getNeighbours(c, map)
         c.freeNeighbours = getFreeNeighbours(c, map)
-        const isDoor = c.freeNeighbours.length === 2
-            && (c.freeNeighbours[0].x == c.freeNeighbours[1].x || c.freeNeighbours[0].y == c.freeNeighbours[1].y)
-            && c.freeNeighbours.some(n => n.freeNeighbours.length > 2
-                || (n.neighbours.length == 2 && !(n.freeNeighbours[0].x == n.freeNeighbours[1].x || n.freeNeighbours[0].y == n.freeNeighbours[1].y))
-            )
-        ;
+    });
+    map.flat().filter(c => c.type === CellTypes.free).forEach(c => {
+        const isCorridor = (c: TCell) => c.freeNeighbours.length === 2
+        const isStraightCorridor = (c: TCell) => isCorridor(c) && (c.freeNeighbours[0].x == c.freeNeighbours[1].x || c.freeNeighbours[0].y == c.freeNeighbours[1].y);
+        const amountOfAdjacentCorridors = (c: TCell) => c.freeNeighbours.filter(isCorridor).length;
+        const isDoor = freeCellTypes.has(c.type) && (
+            isStraightCorridor(c) && amountOfAdjacentCorridors(c) <= 1
+            // || isCorridor(c) && amountOfAdjacentCorridors(c) === 1
+        );
         if (isDoor) {
             c.type = CellTypes.door;
         }
-    });
+    })
     pair[0].type = CellTypes.start;
     pair[1].type = CellTypes.gate;
     computeAllDistances(map);
@@ -126,10 +129,10 @@ function getFreeNeighbours(cell: TCell, map: TCell[][]) {
     return getNeighbours(cell, map).filter(c => freeCellTypes.has(c.type));
 }
 
-const distanceMaps = new Map<TCell[][],Map<TCell, Map<TCell, number>>>;
+const distanceMaps = new Map<TCell[][], Map<TCell, Map<TCell, number>>>;
 
 function computeAllDistances(map: TCell[][]) {
-    const distance =  distanceMaps.get(map) ?? distanceMaps.set(map,new Map()).get(map)!;
+    const distance = distanceMaps.get(map) ?? distanceMaps.set(map, new Map()).get(map)!;
 
     const cells = map.flat().filter(c => c.type !== CellTypes.wall);
     distance.clear();
