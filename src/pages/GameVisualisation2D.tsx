@@ -4,15 +4,18 @@ import {Board} from "../components/Board.tsx";
 import {InputButtons} from "../components/InputButtons.tsx";
 import {Players} from "../components/Players.tsx";
 import {Inventory} from "../components/Inventory.tsx";
-export function GameVisualisation2D({game, handleInput,state}: {
+import {useState} from "react";
+
+export function GameVisualisation2D({game, handleInput, state}: {
     game: TGame,
     state: TState,
     handleInput: (action: TInputActions) => void
 }) {
+    const [full] = useState(new URLSearchParams(location.search).has("full") ?? false)
     return (
         <>
             <Players player={game.player!}/>
-            <Board board={game.board} player={game.player!} full={new URLSearchParams(location.search).has("debug")} events={state.transitions} step={state.step}/>
+            <Board board={game.board} player={game.player!} full={full} events={state.transitions} step={state.step}/>
             <Inventory player={game.player!}/>
             <InputButtons onInput={handleInput!}/>
         </>

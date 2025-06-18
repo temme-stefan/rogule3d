@@ -1,3 +1,6 @@
+body {
+    margin: 0;
+}
 #root {
     --cell-size: min(calc(95vw / 17), 1.5rem);
     --button-size: 3rem;
@@ -7,7 +10,6 @@
         "main" auto
         "footer" auto / 1fr;
 
-    max-width: min(1024px, 95svw);
     margin: 0 auto;
     main, header, footer {
         display: flex;
@@ -27,6 +29,10 @@
 
     footer {
         grid-area: footer;
+    }
+    aside{
+        grid-area: aside;
+        display:none;
     }
 }
 
@@ -59,10 +65,18 @@
 
     #root {
         grid-template:
-        "header" auto
-        "main" 1fr
-        "footer" auto / 1fr;
-        height: 100vh;
+        ". header aside" auto
+        ". main aside" 1fr
+        ". footer aside" auto / 1fr  min(1024px, 95svw) 1fr;
+        height: 100svh;
+        aside{
+            display:flex;
+            flex-direction: row-reverse;
+            [aria-label="JSON view"] {
+                overflow: auto;
+                max-height: 100svh;
+            }
+        }
     }
 
 }

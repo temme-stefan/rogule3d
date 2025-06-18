@@ -4,10 +4,12 @@ import {createGame, type TGame, type TInputActions, type TState} from "./logic/G
 import {GameVisualisation2D} from "./pages/GameVisualisation2D.tsx";
 import {Intro} from "./pages/Intro.tsx";
 import {Endpage} from "./pages/Endpage.tsx";
+import {StatefullJsonViewer} from "./components/StatefullJsonViewer.tsx";
 
 function App() {
     const [game, setGame] = useState<TGame | null>(null)
     const [state, setState] = useState<TState | null | { state: "generating" }>(null)
+    const [debug] = useState(new URLSearchParams(location.search).has("debug"))
     const handlePlay = () => {
         setState({state: "generating"});
         setGame(createGame(new Date().toISOString()))
@@ -37,6 +39,11 @@ function App() {
             }
 
         </main>
+        {debug && game && (
+            <aside>
+                <StatefullJsonViewer data={game}/>
+            </aside>
+        )}
         <footer></footer>
     </>)
 
