@@ -1,52 +1,136 @@
-.cell{
+.cell {
     &.free {
         background-color: lightgoldenrodyellow;
     }
-    &.door{
+
+    &.door {
         background-color: #E6E7E8;
     }
+
     &.wall {
         background-color: #31373D;
     }
-    &.far{
+
+    &.far {
         opacity: 0;
     }
-    &.medium{
+
+    &.medium {
         opacity: 0.7;
     }
-    &.near{
+
+    &.near {
         opacity: 1;
     }
-    &.empty{
+
+    &.inner {
+        border: 0;
+    }
+
+    &.empty {
         background-color: #E6E7E8;
     }
+
     position: relative;
-    .event{
+
+    &.left {
         position: absolute;
-        top:50%;
-        left:50%;
-        z-index:5;
+        z-index: 3;
+        animation: left 0.5s ease-out;
+    }
+
+    &.right {
+        position: absolute;
+        z-index: 3;
+        animation: right 0.5s ease-out;
+    }
+
+    &.up {
+        position: absolute;
+        z-index: 3;
+        animation: up 0.5s ease-out;
+    }
+
+    &.down {
+        position: absolute;
+        z-index: 3;
+        animation: down 0.5s ease-out;
+    }
+
+    .event {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        z-index: 5;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        font-size: 0em;
+        font-size: 0;
         opacity: 0;
         animation: explode 0.7s ease-out;
     }
 }
 
+@keyframes left {
+    0% {
+        left: 0;
+    }
+    40% {
+        left: -30%
+    }
+    100% {
+        left: 0;
+    }
+}
+
+@keyframes right {
+    0% {
+        right: 0;
+    }
+    40% {
+        right: -30%
+    }
+    100% {
+        right: 0;
+    }
+}
+
+@keyframes up {
+    0% {
+        top: 0;
+    }
+    40% {
+        top: -30%
+    }
+    100% {
+        top: 0;
+    }
+}
+
+@keyframes down {
+    0% {
+        bottom: 0;
+    }
+    40% {
+        bottom: -30%
+    }
+    100% {
+        bottom: 0;
+    }
+}
+
 @keyframes explode {
-    0%{
+    0% {
         opacity: 0.7;
         font-size: 0.7em;
     }
-    50%{
+    50% {
         opacity: 0.7;
     }
-    99%{
+    99% {
         opacity: 0;
         font-size: 2.5em;
     }
-    100%{
+    100% {
         opacity: 0;
         font-size: 0;
     }

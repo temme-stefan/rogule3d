@@ -41,7 +41,7 @@ export type TOptions = typeof defaultOptions;
 
 export type TState = {
     step: number,
-    transitions: { type: typeof GameEvent[keyof typeof GameEvent], cell: TCell }[],
+    transitions: { type: typeof GameEvent[keyof typeof GameEvent], cell: TCell , character?: TCharacter}[],
     state: "playing" | "win" | "lose"
 }
 
@@ -175,6 +175,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                 } else {
                     transitions.push({type: GameEvent.blocked, cell: action.defender!.cell!})
                 }
+                transitions.push({type:GameEvent.attacked, cell: action.defender!.cell!, character: action.actor!})
             }
         })
     return transitions;
@@ -252,7 +253,7 @@ export function createGame(seed: string, options: TOptions = defaultOptions) {
             }
             a.item!.cell!.items.splice(a.item!.cell!.items.indexOf(a.item!), 1);
 
-            state.transitions.push({type: GameEvent.destroyed, cell: a.item!.cell!})
+            state.transitions.push({type: GameEvent.destroyed, cell: a.item!.cell!, character: a.actor})
             a.item!.cell = undefined;
         })
 
@@ -380,6 +381,7 @@ export const GameEvent = {
     destroyed: "destroyed",
     damaged: "damaged",
     blocked: "blocked",
+    attacked: "attacked",
 } as const;
 export type TGameEvent = typeof GameEvent[keyof typeof GameEvent];
 export type TAction = {

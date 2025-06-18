@@ -1,8 +1,14 @@
 import {CellTypes, type TCell} from "../logic/Map.ts";
 import "./Cell.css"
-import {GameEvent, type TGameEvent} from "../logic/GameGenerator.ts";
-export function Cell({cell, className = "", event}: { cell: TCell | undefined, className?: string, event?: TGameEvent }) {
-    event && console.log(event);
+import {GameEvent, InputActions, type TGameEvent, type TInputActions} from "../logic/GameGenerator.ts";
+
+export function Cell({cell, className = "", cellEvent, characterEvent}: {
+    cell: TCell | undefined,
+    className?: string,
+    cellEvent?: TGameEvent,
+    characterEvent?: TInputActions
+}) {
+    // characterEvent && console.log(characterEvent,cell)
     const cellTypeToClass = () => {
         switch (cell?.type) {
             case CellTypes.start:
@@ -41,18 +47,41 @@ export function Cell({cell, className = "", event}: { cell: TCell | undefined, c
         }
     }
 
-    const getEventContent=()=>{
-        switch (event){
+    const getEventContent = () => {
+        switch (cellEvent) {
             case GameEvent.damaged:
                 return "💥";
             case GameEvent.blocked:
                 return "🛡️"
             case GameEvent.destroyed:
-            default:return "☁️"
+            default:
+                return "☁️"
         }
     }
 
-    return <span className={[className,"cell",cellTypeToClass()].join(" ")}>{cellTypeToContent()}
-        {event && <span className={"event "+event}>{getEventContent()}</span>}
+    const getEventClass = () => {
+        if (cellTypeToContent() != "☠️") {
+            switch (characterEvent) {
+                case InputActions.moveLeft:
+                    return "left";
+                case InputActions.moveRight:
+                    return "right";
+                case InputActions.moveUp:
+                    return "up";
+                case InputActions.moveDown:
+                    return "down";
+                default:
+                    return "";
+            }
+        }
+    }
+
+    return <span className={[className, "cell", cellTypeToClass()].join(" ")}>
+        {cell && (
+            <>
+                <span className={"cell inner " + getEventClass()}> {cellTypeToContent()}</span>
+                {cellEvent && <span className={"event " + cellEvent}>{getEventContent()}</span>}
+            </>
+        )}
         </span>
 }
