@@ -1,0 +1,4 @@
+.board3D {
+    aspect-ratio: 1;
+    width:min(95svh, 95svw);
+}
