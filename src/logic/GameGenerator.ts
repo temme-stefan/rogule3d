@@ -133,6 +133,7 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
         .sort((a, b) => b.ini - a.ini)
         .forEach(({action}) => {
             if (action.actor.current > 0 && action.defender!.current > 0) {
+                transitions.push({type: GameEvent.attacked, cell: action.defender!.cell!, character: action.actor!})
                 const isHit = random.chance(5 / 6);
                 let damage = random.nextInt(0, action.actor.level - 1);
                 let defense = 0;
@@ -171,7 +172,6 @@ function handleFight(combatActions: TAction[], random: SeededRandom) {
                 } else {
                     transitions.push({type: GameEvent.blocked, cell: action.defender!.cell!})
                 }
-                transitions.push({type: GameEvent.attacked, cell: action.defender!.cell!, character: action.actor!})
             }
         })
     return transitions;

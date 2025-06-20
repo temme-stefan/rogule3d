@@ -23,7 +23,6 @@ export function Board({board, player, full = false, events, step}: {
         }
         return [from, direction]
     }));
-    console.log(characterEventMap)
 
     return (
         <section className={"board"}>
