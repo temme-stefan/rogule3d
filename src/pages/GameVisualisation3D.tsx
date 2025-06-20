@@ -2,7 +2,7 @@ import {InputActions, type TGame, type TInputActions, type TState} from "../logi
 import {Players} from "../components/Players.tsx";
 import {Inventory} from "../components/Inventory.tsx";
 import {InputButtons} from "../components/InputButtons.tsx";
-import {useCallback, useEffect, useState} from "react";
+import {useState} from "react";
 import {Board3D} from "../components3D/Board3D.tsx";
 import "./GameVisualisation3D.css"
 export function GameVisualisation3D({game, handleInput, state}: {
@@ -10,34 +10,20 @@ export function GameVisualisation3D({game, handleInput, state}: {
     state: TState,
     handleInput: (action: TInputActions) => void
 }) {
-    const [facing, setFacing] = useState<TInputActions>(InputActions.moveUp);
-    const [shift, setShift] = useState<boolean>(false);
-    const shiftDown = useCallback((e: KeyboardEvent) => {
-        if (e.key === "Shift") {
-            setShift(true);
-        }
-    }, [shift, setShift]);
-    const shiftUp = useCallback((e: KeyboardEvent) => {
-        if (e.key === "Shift") {
-            setShift(false);
-        }
-    }, [shift, setShift]);
+    const dirs = [InputActions.moveUp, InputActions.moveRight, InputActions.moveDown, InputActions.moveLeft];
+    const [facing, setFacing] = useState<typeof dirs[number]>(InputActions.moveUp);
+    const [turnLeft,setTurnLeft]=useState<typeof dirs[number]>(InputActions.moveLeft);
+    const [turnRight,setTurnRight]=useState<typeof dirs[number]>(InputActions.moveRight);
 
-    useEffect(() => {
-        window.addEventListener("keydown", shiftDown);
-        window.addEventListener("keyup", shiftUp);
-        return () => {
-            window.removeEventListener("keydown", shiftDown);
-            window.removeEventListener("keyup", shiftUp);
+    const handleInputWithFacing = (input:{action: TInputActions,shift:boolean}) => {
+        if (input.action != InputActions.idle) {
+            setFacing(input.action);
+            const i = dirs.indexOf(input.action);
+            setTurnLeft(dirs[(i+3)%4])
+            setTurnRight(dirs[(i+1)%4])
         }
-    })
-
-    const handleInputWithFacing = (action: TInputActions) => {
-        if (action != InputActions.idle) {
-            setFacing(action);
-        }
-        if (!shift) {
-            handleInput(action);
+        if (!input.shift) {
+            handleInput(input.action);
         }
     }
 
@@ -47,7 +33,7 @@ export function GameVisualisation3D({game, handleInput, state}: {
                      facing={facing}/>
             <Players player={game.player!}/>
             <Inventory player={game.player!}/>
-            <InputButtons onInput={handleInputWithFacing}/>
+            <InputButtons onInput={handleInputWithFacing} turnLeft={turnLeft} turnRight={turnRight}/>
         </div>
     );
 }

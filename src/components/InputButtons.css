@@ -1,7 +1,7 @@
 .input-buttons {
     display: grid;
     grid-template:
-      ". up ." auto
+      "turn-left up turn-right" auto
       "left idle right" auto
       ". down ." auto
       /auto auto auto;
@@ -40,5 +40,11 @@
 
     .idle {
         grid-area: idle;
+    }
+    .turn-left {
+        grid-area: turn-left;
+    }
+    .turn-right {
+        grid-area: turn-right;
     }
 }

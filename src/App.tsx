@@ -11,7 +11,7 @@ import {GameVisualisation3D} from "./pages/GameVisualisation3D.tsx";
 function App() {
     const [game, setGame] = useState<TGame | null>(null)
     const [state, setState] = useState<TState | null | { state: "generating" }>(null)
-    const [dimensions, setDimensions] = useState<"2d" | "3d">("3d")
+    const [dimensions] = useState<"2d" | "3d">("3d")
     const debug = new URLSearchParams(location.search).has("debug")
     const mapOptions: Map<string, TMapOptions> = new Map([roomDungeonMapDefaultOptions(), organicDungeonMapDefaultOptions()].map(o => [o.type, o]));
     const handlePlay = () => {
