@@ -1,4 +1,5 @@
 .cell {
+    background-color: #ffffff;
     &.free {
         background-color: lightgoldenrodyellow;
     }
