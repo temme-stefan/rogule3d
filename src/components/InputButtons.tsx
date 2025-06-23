@@ -36,7 +36,7 @@ export function InputButtons({onInput, turnLeft, turnRight}: {
                 catched = true;
                 break;
             case ".":
-                onInput({action:InputActions.moveRight,shift:false});
+                onInput({action:InputActions.idle,shift:false});
                 catched = true;
                 break;
             default:

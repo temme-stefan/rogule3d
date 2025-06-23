@@ -10,9 +10,10 @@ import {Monster3D} from "./Monster3D.tsx";
 import {Item3D} from "./Item3D.tsx";
 
 const cameraY = 1.5;
-const targetY = 1.5;
-const targetDistanz = 10
-const cameraDistanz = 1
+const targetY = 1.4;
+const targetDistanz = 0.7
+const cameraDistanz = 0.3
+const fov = 80;
 
 const playerToCamera = (player: TGame["player"], facing: TInputActions) => {
     const position: [number, number, number] = [0, cameraY, 0];
@@ -55,7 +56,9 @@ export function Scene3D({game, events, step, facing}: {
 
     return (
         <div className={"board3D"}>
-            <Canvas camera={{position: playerToCamera(game.player, facing).position, fov: 90}}>
+            <Canvas
+                camera={{position: playerToCamera(game.player, facing).position, fov: fov, far: game.player!.vision}}
+            >
                 <SceneContent3D game={game} events={events} step={step} facing={facing}/>
             </Canvas>
         </div>
@@ -70,9 +73,11 @@ function SceneContent3D({game, events, step, facing}: {
     facing: TInputActions
 }) {
     const debug = new URLSearchParams(location.search).has("debug") ?? false
-    const {camera} = useThree();
+    const {camera, gl} = useThree();
     const orbitControll = useRef<OrbitControlsImpl>(null);
-
+    useEffect(() => {
+        gl.setClearColor(0x000000, 1);
+    }, [gl]);
     useEffect(() => {
         if (camera && orbitControll.current && game.player?.cell) {
             const {position: newPos, target: newTarget} = playerToCamera(game.player, facing);
@@ -88,7 +93,7 @@ function SceneContent3D({game, events, step, facing}: {
                     <Cell3D key={`${x}|${y}}`} cell={cell}/>
                 ))
             ))}
-            <gridHelper args={[game.options.map.size.x, game.options.map.size.y, 0x5A2A02, 0x5A2A02]}
+            <gridHelper args={[game.options.map.size.x, game.options.map.size.y, "#905000", "#905000"]}
                         position={[game.options.map.size.x / 2 - 0.5, 0, game.options.map.size.y / 2 - 0.5]}/>
             {game.player?.cell && <Player3D player={game.player} facing={facing}/>}
             {game.monsters.map((m, i) => (
