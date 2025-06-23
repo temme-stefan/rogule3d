@@ -1,11 +1,11 @@
 import type {TItem} from "../logic/Item.ts";
+import {UnicodeSprite3D} from "./UnicodeSprite3D.tsx";
 
 export function Item3D({item}: { item: TItem }) {
     const onGround = !!item.cell;
     return onGround && (
-        <mesh position={[item.cell!.x, 0, item.cell!.y]}>
-            <sphereGeometry args={[0.5, 32, 32]}/>
-            <meshStandardMaterial color={item.treasure?"golden":"#00ff00"} wireframe={false} opacity={0.5} transparent={true}/>
-        </mesh>
+        <group position={[item.cell!.x, 0.2, item.cell!.y]}>
+            <UnicodeSprite3D unicode={item.unicode} fontSize={1} layFlat={false}/>
+        </group>
     );
 }

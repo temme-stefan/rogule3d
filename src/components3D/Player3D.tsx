@@ -6,6 +6,7 @@ import {PerspectiveCamera} from "@react-three/drei";
 import {useFrame} from "@react-three/fiber";
 import {useSmoothRotation} from "./hooks/useSmoothRotation.ts";
 import {useSmoothPosition} from "./hooks/useSmoothPosition.ts";
+import {UnicodeSprite3D} from "./UnicodeSprite3D.tsx";
 
 const playerSettings = {
     playerY: 0.5,
@@ -40,11 +41,9 @@ export function Player3D({player, facing}: {
 
     return (
         <group ref={group}>
-            <mesh>
-                <sphereGeometry args={[0.5, 32, 32]}/>
-                <meshStandardMaterial color={"#0000ff"} wireframe={false} opacity={0.5} transparent={true}/>
-            </mesh>
-            <axesHelper args={[1]}/>
+            <group position={[0,0.8,0]} >
+            <UnicodeSprite3D unicode={player.unicode} layFlat={false} fontSize={1} opacity={0.5}/>
+            </group>
             <pointLight position={[0, 1, 0]} intensity={player.vision + 5} distance={player!.vision * player!.vision}
                         color={"#FBE293"}/>
             <PerspectiveCamera position={[0, playerSettings.cameraY - playerSettings.playerY, playerSettings.cameraDistanz]} fov={playerSettings.fov} makeDefault={true}/>

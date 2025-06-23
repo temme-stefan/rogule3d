@@ -7,6 +7,8 @@ import {Player3D} from "./Player3D.tsx";
 import {Board3D} from "./Board3D.tsx";
 import {Monster3D} from "./Monster3D.tsx";
 import {Item3D} from "./Item3D.tsx";
+import {CellTypes} from "../logic/Map.ts";
+import {UnicodeSprite3D} from "./UnicodeSprite3D.tsx";
 
 
 
@@ -34,7 +36,7 @@ function SceneContent3D({game, events, facing, step}: {
     step: TState["step"]
 }) {
     const {gl} = useThree();
-
+    const goal = game.map.board.flat().find(c=>c.type===CellTypes.gate)
 // Initialposition aus Game-State berechnen
     useEffect(() => {
         gl.setClearColor(0x000000, 1);
@@ -57,6 +59,9 @@ function SceneContent3D({game, events, facing, step}: {
             {game.treasures.map((t, i) => (
                 <Item3D key={`treasure-${i}`} item={t}/>
             ))}
+            <group position={[goal!.x, 0.9, goal!.y]} rotation={[0, 0, 0]}>
+                <UnicodeSprite3D unicode={"⛩"} fontSize={1.8}/>
+            </group>
             <Stats/>
         </>
     )

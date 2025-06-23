@@ -7,12 +7,14 @@ interface UnicodeSprite3DProps {
     fontSize?: number
     position?: [number, number, number]
     layFlat?: boolean
+    opacity?: number
 }
 
 export function UnicodeSprite3D({
                                     unicode,
                                     fontSize = 1,
-                                    layFlat = false
+                                    layFlat = false,
+    opacity = 1,
                                 }: UnicodeSprite3DProps) {
     const spriteRef = useRef<Mesh>(null)
 
@@ -70,9 +72,9 @@ export function UnicodeSprite3D({
             ref={spriteRef}
             rotation={layFlat ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}
         >
-            <planeGeometry args={[1, 1]}/>
+            <planeGeometry args={[fontSize, fontSize]}/>
             {
-                <meshStandardMaterial map={material.texture} transparent={true}/>
+                <meshStandardMaterial map={material.texture} transparent={true} opacity={opacity}/>
             }
         </mesh>
     )
