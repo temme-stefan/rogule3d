@@ -5,6 +5,7 @@ import {InputButtons} from "../components/InputButtons.tsx";
 import {useState} from "react";
 import {Scene3D} from "../components3D/Scene3D.tsx";
 import "./GameVisualisation3D.css"
+import {Board} from "../components/Board.tsx";
 
 export function GameVisualisation3D({game, handleInput, state}: {
     game: TGame,
@@ -39,11 +40,13 @@ export function GameVisualisation3D({game, handleInput, state}: {
         }
     }
 
+
     return (
         <div className={"game3D"}>
             <Scene3D game={game} events={state.transitions} step={state.step}
                      facing={facing}/>
             <Players player={game.player!}/>
+            <Board board={game.map.board} player={game.player!} full={false} events={[]} step={state.step} Preview3D={true} facing={facing}/>
             <Inventory player={game.player!}/>
             <InputButtons onInput={handleInputWithFacing} turnLeft={InputActions.moveLeft} turnRight={InputActions.moveRight}/>
         </div>

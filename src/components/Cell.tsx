@@ -1,6 +1,7 @@
 import {CellTypes, type TCell} from "../logic/Map.ts";
 import "./Cell.css"
 import {GameEvent, InputActions, type TGameEvent, type TInputActions} from "../logic/GameGenerator.ts";
+import {isPlayer} from "../logic/Character.ts";
 
 
 const checkDiagonalIsFree = (cell:TCell) => {
@@ -8,11 +9,13 @@ const checkDiagonalIsFree = (cell:TCell) => {
     const {x,y}=cell;
     return [[-1,-1],[1,-1],[-1,1],[1,1]].some(([dx,dy])=>allCells.some(c=>c.x===x+dx&&c.y===y+dy))
 }
-export function Cell({cell, className = "", cellEvent, characterEvent}: {
+export function Cell({cell, className = "", cellEvent, characterEvent, Preview3D=false, facing=InputActions.idle}: {
     cell: TCell | undefined,
     className?: string,
     cellEvent?: TGameEvent,
-    characterEvent?: TInputActions
+    characterEvent?: TInputActions,
+    Preview3D?: boolean,
+    facing?: TInputActions
 }) {
     // characterEvent && console.log(characterEvent,cell)
     const cellTypeToClass = () => {
@@ -33,6 +36,18 @@ export function Cell({cell, className = "", cellEvent, characterEvent}: {
     const cellTypeToContent = () => {
         const alive = cell?.characters.find(c => c.current > 0);
         if (alive) {
+            if (Preview3D && facing && isPlayer(alive)) {
+                switch (facing) {
+                    case InputActions.moveLeft:
+                        return "⬅️";
+                    case InputActions.moveRight:
+                        return "➡️";
+                    case InputActions.moveUp:
+                        return "⬆️";
+                    case InputActions.moveDown:
+                        return "⬇️";
+                }
+            }
             return alive.unicode;
         }
         if ((cell?.items.length ?? 0) > 0) {

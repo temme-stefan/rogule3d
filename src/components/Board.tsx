@@ -4,12 +4,14 @@ import './Board.css'
 import type {TPlayer} from "../logic/Character.ts";
 import {InputActions, type TInputActions, type TState} from "../logic/GameGenerator.ts";
 
-export function Board({board, player, full = false, events, step}: {
+export function Board({board, player, full = false, events, step, Preview3D = false, facing}: {
     board: TCell[][],
     player: TPlayer,
     full?: boolean,
     events: TState["transitions"],
     step: TState["step"]
+    Preview3D?: boolean,
+    facing?: TInputActions
 }) {
     const eventMap = new Map(events.map(ev => [ev.cell, ev.type]));
     const characterEventMap = new Map(events.filter(ev => ev.character).map(ev => {
@@ -33,6 +35,8 @@ export function Board({board, player, full = false, events, step}: {
                     eventMap={eventMap}
                     characterEventMap={characterEventMap}
                     step={step}
+                    Preview3D={Preview3D}
+                    facing={facing}
                 /> :
                 <FullBoard
                     board={board}
@@ -45,12 +49,14 @@ export function Board({board, player, full = false, events, step}: {
     )
 }
 
-function FogOfWarBoard({board, player, eventMap, characterEventMap, step}: {
+function FogOfWarBoard({board, player, eventMap, characterEventMap, step, Preview3D=false, facing=InputActions.idle}: {
     board: TCell[][],
     player: TPlayer,
     eventMap: Map<TCell, TState["transitions"][0]["type"]>,
     characterEventMap: Map<TCell, TInputActions>,
-    step: number
+    step: number,
+    Preview3D?: boolean,
+    facing?: TInputActions
 }) {
     const {x, y} = player.cell!;
     const vision = player.vision;
@@ -74,6 +80,8 @@ function FogOfWarBoard({board, player, eventMap, characterEventMap, step}: {
                                      className={distanceClass(dx, dy)}
                                      cellEvent={eventMap.get(cell)}
                                      characterEvent={characterEventMap.get(cell)}
+                                     Preview3D={Preview3D}
+                                     facing={facing}
                         />
                     })}
                 </div>
@@ -95,7 +103,8 @@ function FullBoard({board, eventMap, characterEventMap, step}: {
                     {row.map((cell, x) => (
                         <Cell cell={cell} key={`${x}~${y}~${step}`}
                               cellEvent={eventMap.get(cell)}
-                              characterEvent={characterEventMap.get(cell)}/>
+                              characterEvent={characterEventMap.get(cell)}
+                        />
                     ))}
                 </div>
             ))}

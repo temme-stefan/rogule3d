@@ -21,6 +21,20 @@
         grid-row: 2/span 1;
     }
 
+    .board{
+        grid-area: map;
+        justify-self: end;
+        .cell:not(.free):not(.door):not(.wall){
+            background-color: transparent;
+        }
+        .cell{
+            border:transparent;
+            width: calc(var(--cell-size) * 0.7);
+            aspect-ratio: 1;
+            font-size: calc(var(--cell-size) * 0.7 * 0.7);
+        }
+    }
+
     .inventory {
         grid-area: inventory;
     }
@@ -30,7 +44,8 @@
     .game3D {
         display: grid;
         grid-template:
-    ". player ." auto
+    "player . map" auto
+    ". . map" auto
     ". . ." 1fr
     ". . buttons" auto
     ". inventory buttons" auto
@@ -38,7 +53,7 @@
 
         .board3D {
             grid-column: 1/ span 3;
-            grid-row: 1/span 4;
+            grid-row: 1/span 5;
         }
 
     }

@@ -1,6 +1,5 @@
 .board {
     .row {
-        height: var(--cell-size);
         display: flex;
         flex-direction: row;
     }

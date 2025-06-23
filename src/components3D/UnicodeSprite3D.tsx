@@ -1,5 +1,5 @@
 import {useMemo, useRef} from 'react'
-import * as THREE from 'three'
+import {Vector3, Mesh, CanvasTexture} from 'three'
 import {useFrame} from "@react-three/fiber";
 
 interface UnicodeSprite3DProps {
@@ -12,11 +12,10 @@ interface UnicodeSprite3DProps {
 export function UnicodeSprite3D({
                                     unicode,
                                     fontSize = 1,
-                                    position = [0, 0, 0],
                                     layFlat = false
                                 }: UnicodeSprite3DProps) {
-    const spriteRef = useRef<THREE.Sprite>(null)
-    
+    const spriteRef = useRef<Mesh>(null)
+
     const material = useMemo(() => {
         // Create canvas
         const canvas = document.createElement('canvas')
@@ -27,7 +26,7 @@ export function UnicodeSprite3D({
         canvas.height = resolution
 
         // Configure text rendering
-        context.font = `${fontSize * resolution/2}px  "Noto Color Emoji", Arial, sans-serif`
+        context.font = `${fontSize * resolution / 2}px  "Noto Color Emoji", Arial, sans-serif`
         context.textBaseline = 'middle'
         context.textAlign = 'center'
         context.fillStyle = 'white'
@@ -40,24 +39,27 @@ export function UnicodeSprite3D({
         context.fillText(unicode, canvas.width / 2, canvas.height / 2)
 
         // Create texture and material
-        const texture = new THREE.CanvasTexture(canvas)
+        const texture = new CanvasTexture(canvas)
         return {texture}
     }, [unicode, fontSize])
 
-    useFrame(( {camera}) => {
+    useFrame(({camera}) => {
         if (spriteRef.current) {
             const obj = spriteRef.current
+            const worldPos = new Vector3();
+            obj.getWorldPosition(worldPos);
+            const camPos = new Vector3()
+            camera.getWorldPosition(camPos);
             if (!layFlat) {
-                const camPos = camera.position.clone()
-                camPos.y = obj.position.y
+                camPos.y = worldPos.y
                 obj.lookAt(camPos)
             } else {
                 // Flach liegen lassen (im XZ-Plane)
                 obj.rotation.x = -Math.PI / 2
 
                 // Blickrichtung zur Kamera auf XZ-Ebene (Rotation um Y)
-                const camDir = new THREE.Vector3()
-                camDir.subVectors(camera.position, obj.position)
+                const camDir = new Vector3()
+                camDir.subVectors(camPos, worldPos);
                 obj.rotation.z = Math.atan2(camDir.x, camDir.z)
             }
         }
@@ -66,12 +68,12 @@ export function UnicodeSprite3D({
     return (
         <mesh
             ref={spriteRef}
-            position={position}
             rotation={layFlat ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}
         >
-            <planeGeometry args={[1, 1]}/>{
-            <meshStandardMaterial map={material.texture} transparent={true} />
-        }
+            <planeGeometry args={[1, 1]}/>
+            {
+                <meshStandardMaterial map={material.texture} transparent={true}/>
+            }
         </mesh>
     )
 }
