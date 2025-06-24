@@ -31,13 +31,6 @@ export function UnicodeSprite3D({
         context.font = `${fontSize * resolution / 2}px  "Noto Color Emoji", Arial, sans-serif`
         context.textBaseline = 'middle'
         context.textAlign = 'center'
-        context.fillStyle = 'white'
-        context.fillText(unicode, canvas.width / 2, canvas.height / 2)
-        context.fillStyle = 'red'
-        context.textAlign = 'center'
-        context.textBaseline = 'middle'
-
-        // Draw unicode character
         context.fillText(unicode, canvas.width / 2, canvas.height / 2)
 
         // Create texture and material
